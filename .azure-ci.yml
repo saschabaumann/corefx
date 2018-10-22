@@ -10,10 +10,13 @@ phases:
   - template: /eng/common/templates/phases/base.yml
     parameters:
       name: Ubuntu16_04
-      container: Ubuntu1604Container
       queue:
+        container: Ubuntu1604Container
         name: Hosted Ubuntu 1604
       steps:
       - script: ./build.sh
-          --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug && cat init-tools.log
+          --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
         displayName: Build Sources
+      - script: cat init-tools.log
+        displayName: Print Log
+        condition: always()
