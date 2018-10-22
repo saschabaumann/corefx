@@ -12,10 +12,7 @@ phases:
       name: Ubuntu16.04
       container: Ubuntu1604Container
       queue:
-        ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
-          name: dnceng-linux-external-temp
-        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
-          name: dnceng-linux-internal-temp
+        name: Hosted Ubuntu 1604
       steps:
       - script: build.sh
           --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
