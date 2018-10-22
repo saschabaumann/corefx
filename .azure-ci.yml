@@ -1,4 +1,5 @@
--trigger: none
+# Disable CI triggers, we don't want a build per merge to Master
+trigger: none
 
 resources:
   containers:
