@@ -9,7 +9,7 @@ resources:
 phases:
   - template: /eng/common/templates/phases/base.yml
     parameters:
-      name: Ubuntu16.04
+      name: Ubuntu16_04
       container: Ubuntu1604Container
       queue:
         name: Hosted Ubuntu 1604
