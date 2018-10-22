@@ -7,7 +7,7 @@ resources:
       image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255
 
 phases:
-  -template: /eng/common/templates/phases/base.yml
+  - template: /eng/common/templates/phases/base.yml
     parameters:
       name: Ubuntu16.04
       container: Ubuntu1604Container
