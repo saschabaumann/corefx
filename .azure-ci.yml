@@ -1,11 +1,21 @@
-pool:
-  vmImage: 'Ubuntu 16.04'
+-trigger: none
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+resources:
+  containers:
+    - container: Ubuntu1604Container
+      image: microsoft/dotnet-buildtools-prereqs:ubuntu-16.04-cross-e435274-20180426002255
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+phases:
+  -template: /eng/common/templates/phases/base.yml
+    parameters:
+      name: Ubuntu16.04
+      container: Ubuntu1604Container
+      queue:
+        ${{ if or(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'PullRequest')) }}:
+          name: dnceng-linux-external-temp
+        ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+          name: dnceng-linux-internal-temp
+      steps:
+      - script: build.sh
+          --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
+        displayName: Build Sources
