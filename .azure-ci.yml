@@ -6,6 +6,9 @@ resources:
   - container: LinuxContainer
     image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
 
+variables:
+  _commonProps: --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
+
 phases:
   - template: /eng/common/templates/phases/base.yml
     parameters:
@@ -14,6 +17,7 @@ phases:
         container: LinuxContainer
         name: Hosted Ubuntu 1604
       steps:
-      - script: ./build.sh
-          --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
+      - script: ./build.sh $(_commonProps)
         displayName: Build Sources
+      - script: ./build.sh -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
+        displayName: Build Tests
