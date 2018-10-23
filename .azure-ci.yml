@@ -14,10 +14,11 @@ phases:
     parameters:
       name: Linux
       queue:
-        container: LinuxContainer
+        # container: LinuxContainer
         name: Hosted Ubuntu 1604
       steps:
-      - script: ./build.sh $(_commonProps)
-        displayName: Build Sources
-      - script: ./build.sh -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
-        displayName: Build Tests
+      # - script: ./build.sh $(_commonProps)
+      #   displayName: Build Sources
+      # - script: ./build.sh -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
+      #   displayName: Build Tests
+        - script: echo $(Build.RequestedForEmail) $(Build.SourceVersion)
