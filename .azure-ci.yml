@@ -8,6 +8,20 @@ resources:
 
 variables:
   _commonProps: --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
+  # _helixArgs: /p:TestProduct=corefx
+  #   /p:TimeoutInSeconds=1200
+  #   /p:HelixJobType=test/functional/cli/
+  #   /p:HelixSource=pr/dotnet/corefx/$(Build.SourceBranch)
+  #   /p:BuildMoniker=$(Build.SourceVersion)
+  #   /p:HelixCreator=$$(Build.RequestedForEmail)
+  #   /p:CloudDropAccountName=dotnetbuilddrops
+  #   /p:CloudResultsAccountName=dotnetjobresults
+  #   /p:CloudDropAccessToken=\$CloudDropAccessToken
+  #   /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken
+  #   /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs
+  #   /p:TargetQueues=
+  #   /p:HelixLogFolder=${WORKSPACE}/${logFolder}/
+  #   /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt
 
 phases:
   - template: /eng/common/templates/phases/base.yml
@@ -17,8 +31,16 @@ phases:
         # container: LinuxContainer
         name: Hosted Ubuntu 1604
       steps:
-      # - script: ./build.sh $(_commonProps)
+      # - script: ./build.sh
+      #     $(_commonProps)
       #   displayName: Build Sources
-      # - script: ./build.sh -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
+      # - script: ./build.sh
+      #     -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
       #   displayName: Build Tests
-        - script: echo $(Build.RequestedForEmail) $(Build.SourceVersion)
+      # - script: ./eng/common/msbuild.sh
+      #     --warnaserror false src/upload-tests.proj
+      #     /p:ArchGroup=x64
+      #     /p:ConfigurationGroup=Debug
+      #     /p:TargetOS=Linux
+      #   displayName: Submit Tests To Helix
+      - script: echo $(Build.RequestedFor) $(Build.SourceVersion)
