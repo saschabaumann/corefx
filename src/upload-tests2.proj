@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.DotNet.Helix.Sdk">
+  <PropertyGroup>
+    <HelixType>test/functional/cli/</HelixType>
+    <EnableXUnitReporter>true</EnableXUnitReporter>
+    <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <HelixCorrelationPayload Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\test-runtime*.zip">
+      <PayloadArchive>%(Identity)</PayloadArchive>
+    </HelixCorrelationPayload>
+  </ItemGroup>
+
+  <ItemGroup>
+    <HelixWorkItem Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\tests\*.zip" Exclude="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\test-runtime*.zip">
+      <PayloadArchive>%(Identity)</PayloadArchive>
+      <Command>$(HelixCommand)</Command>
+    </HelixWorkItem>
+  </ItemGroup>
+</Project>

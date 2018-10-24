@@ -8,39 +8,33 @@ resources:
 
 variables:
   _commonProps: --ci /p:ArchGroup=x64 /p:ConfigurationGroup=Debug
-  # _helixArgs: /p:TestProduct=corefx
-  #   /p:TimeoutInSeconds=1200
-  #   /p:HelixJobType=test/functional/cli/
-  #   /p:HelixSource=pr/dotnet/corefx/$(Build.SourceBranch)
-  #   /p:BuildMoniker=$(Build.SourceVersion)
-  #   /p:HelixCreator=$$(Build.RequestedForEmail)
-  #   /p:CloudDropAccountName=dotnetbuilddrops
-  #   /p:CloudResultsAccountName=dotnetjobresults
-  #   /p:CloudDropAccessToken=\$CloudDropAccessToken
-  #   /p:CloudResultsAccessToken=\$OutputCloudResultsAccessToken
-  #   /p:HelixApiEndpoint=https://helix.dot.net/api/2017-04-14/jobs
-  #   /p:TargetQueues=
-  #   /p:HelixLogFolder=${WORKSPACE}/${logFolder}/
-  #   /p:HelixCorrelationInfoFileName=SubmittedHelixRuns.txt
 
 phases:
   - template: /eng/common/templates/phases/base.yml
     parameters:
       name: Linux
       queue:
-        # container: LinuxContainer
+        container: LinuxContainer
         name: Hosted Ubuntu 1604
       steps:
-      # - script: ./build.sh
-      #     $(_commonProps)
-      #   displayName: Build Sources
-      # - script: ./build.sh
-      #     -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
-      #   displayName: Build Tests
-      # - script: ./eng/common/msbuild.sh
-      #     --warnaserror false src/upload-tests.proj
-      #     /p:ArchGroup=x64
-      #     /p:ConfigurationGroup=Debug
-      #     /p:TargetOS=Linux
-      #   displayName: Submit Tests To Helix
-      - script: echo $(Build.RequestedFor) $(Build.SourceVersion)
+      - script: ./build.sh
+          $(_commonProps)
+        displayName: Build Sources
+      - script: ./build.sh
+          -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
+        displayName: Build Tests
+      - script: ./eng/common/msbuild.sh
+          --warnaserror false src/upload-tests.proj
+          /t:CompressRuntimeDir
+          /p:ArchGroup=x64
+          /p:ConfigurationGroup=Debug
+          /p:TargetOS=Linux
+        displayName: Compress Runtime Directory
+      - script: ./eng/common/msbuild.sh
+          --warnaserror false src/upload-tests2.proj
+          /t:test
+        env:
+          HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
+          HelixBuild: $(Build.BuildNumber)
+          HelixTargetQueues: Ubuntu.1604.Amd64.Open
+          HelixCommand: RunTests.sh
