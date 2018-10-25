@@ -17,27 +17,30 @@ parameters:
 steps:
   variables:
     _msbuildArguments: --warnaserror false eng/common/helixpublish.proj /t:test /p:Language=msbuild
-    - ${{ if ne($(Agent.OS), 'Windows_NT') }}:
-      _msbuildScript: ./eng/common/msbuild.sh
-    - ${{ if eq($(Agent.OS), 'Windows_NT') }}:
-      _msbuildScript: eng\common\msbuild.ps1
-  - script: $(_msbuildScript)
-      --warnaserror false eng/common/helixpublish.proj
-      /t:test
-      /p:Language=msbuild
-    displayName: Send job to Helix
-    env:
-      HelixSource: ${{ parameters.HelixSource }}
-      HelixType: ${{ parameters.HelixType }}
-      HelixBuild: ${{ parameters.HelixBuild }}
-      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-      HelixAccessToken: ${{ parameters.HelixAccessToken }}
-      HelixPreCommands: ${{ parameters.HelixPreCommands }}
-      HelixPostCommands: ${{ parameters.HelixPostCommands }}
-      HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-      WorkItemCommand: ${{ parameters.WorkItemCommand }}
-      WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
+  - ${{ if ne($(Agent.OS), 'Windows_NT') }}:
+    - script: ./eng/common/msbuild.sh
+        --warnaserror false eng/common/helixpublish.proj
+        /t:test
+        /p:Language=msbuild
+      displayName: Send job to Helix
+  - ${{ if eq($(Agent.OS), 'Windows_NT') }}:
+      - script: eng\common\msbuild.ps1
+        --warnaserror false eng/common/helixpublish.proj
+        /t:test
+        /p:Language=msbuild
+      displayName: Send job to Helix
+  env:
+    HelixSource: ${{ parameters.HelixSource }}
+    HelixType: ${{ parameters.HelixType }}
+    HelixBuild: ${{ parameters.HelixBuild }}
+    HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+    HelixAccessToken: ${{ parameters.HelixAccessToken }}
+    HelixPreCommands: ${{ parameters.HelixPreCommands }}
+    HelixPostCommands: ${{ parameters.HelixPostCommands }}
+    HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
+    IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
+    EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+    WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+    WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+    WorkItemCommand: ${{ parameters.WorkItemCommand }}
+    WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
