@@ -15,12 +15,16 @@ parameters:
   WaitForWorkItemCompletion: true
 
 steps:
-  - task: DotNetCoreCLI@2
-    inputs:
-      command: custom
-      projects: eng/common/helixpublish.proj
-      custom: msbuild
-      arguments: '/t:test /p:Language=msbuild'
+  - ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
+    variables:
+      _msbuildScript: ./eng/common/msbuild.sh
+  - ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
+    variables:
+      _msbuildScript: eng\common\msbuild.ps1
+  - script: $(_msbuildScript)
+      --warnaserror false eng/common/helixpublish.proj
+      /t:test
+      /p:Language=msbuild
     displayName: Send job to Helix
     env:
       HelixSource: ${{ parameters.HelixSource }}
