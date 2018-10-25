@@ -30,8 +30,10 @@ steps:
       HelixAccessToken: ${{ parameters.HelixAccessToken }}
       HelixPreCommands: ${{ parameters.HelixPreCommands }}
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
       IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
       EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
       WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
       WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
