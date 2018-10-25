@@ -33,9 +33,10 @@ phases:
       - script: ./eng/common/msbuild.sh
           --warnaserror false src/upload-tests2.proj
           /t:test
+        displayName: Create Helix Job
         env:
           HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
           HelixBuild: $(Build.BuildNumber)
           HelixTargetQueues: Ubuntu.1604.Amd64.Open
-          HelixCommand: RunTests.sh
+          HelixCommand: RunTests.sh %HELIX_CORRELATION_PAYLOAD%
           HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)

@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <HelixWorkItem Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\tests\*.zip" Exclude="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\test-runtime*.zip">
+    <HelixWorkItem Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\tests\**\*.zip" Exclude="@(HelixCorrelationPayload)">
       <PayloadArchive>%(Identity)</PayloadArchive>
       <Command>$(HelixCommand)</Command>
     </HelixWorkItem>
