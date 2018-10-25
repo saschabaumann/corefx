@@ -17,7 +17,7 @@ parameters:
 steps:
   ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
     variables:
-      -script: ./eng/common/msbuild.sh
+      _msbuildScript: ./eng/common/msbuild.sh
   ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
     variables:
       _msbuildScript: eng\common\msbuild.ps1
