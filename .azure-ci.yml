@@ -38,5 +38,5 @@ phases:
           HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
           HelixBuild: $(Build.BuildNumber)
           HelixTargetQueues: Ubuntu.1604.Amd64.Open
-          HelixCommand: RunTests.sh $HELIX_CORRELATION_PAYLOAD
+          HelixCommand: ./RunTests.sh $HELIX_CORRELATION_PAYLOAD
           HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)

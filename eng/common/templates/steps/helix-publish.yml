@@ -2,12 +2,14 @@ parameters:
   HelixSource: 'pr/dotnet-github-anon-kaonashi-bot'
   HelixType: ̓'tests/default'
   HelixBuild: $(Build.BuildNumber)
+  HelixCorrelationPayload: ''
   HelixTargetQueues: ''
   HelixAccessToken: ''
   HelixPreCommands: ''
   HelixPostCommands: ''
   WorkItemDirectory: ''
   WorkItemCommand: ''
+  WorkItemArchiveWildCard: ''
   IncludeDotNetSdk: false
   EnableXUnitReporter: false
   WaitForWorkItemCompletion: true
