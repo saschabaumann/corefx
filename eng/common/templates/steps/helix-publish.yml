@@ -15,11 +15,10 @@ parameters:
   WaitForWorkItemCompletion: true
 
 steps:
-  ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
-    variables:
+  variables:
+    ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
       _msbuildScript: ./eng/common/msbuild.sh
-  ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
-    variables:
+    ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
       _msbuildScript: eng\common\msbuild.ps1
   - script: $(_msbuildScript)
       --warnaserror false eng/common/helixpublish.proj
