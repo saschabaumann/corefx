@@ -31,7 +31,7 @@ phases:
           /p:TargetOS=Linux
         displayName: Compress Runtime Directory
       - script: ./eng/common/msbuild.sh
-          --warnaserror false src/upload-tests2.proj
+          --warnaserror false --verbosity 'diagnostics' src/upload-tests2.proj
           /t:test
         displayName: Create Helix Job
         env:
