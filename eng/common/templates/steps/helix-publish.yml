@@ -15,8 +15,6 @@ parameters:
   WaitForWorkItemCompletion: true
 
 steps:
-  variables:
-    _msbuildArguments: --warnaserror false eng/common/helixpublish.proj /t:test /p:Language=msbuild
   - ${{ if ne($(Agent.OS), 'Windows_NT') }}:
     - script: ./eng/common/msbuild.sh
         --warnaserror false eng/common/helixpublish.proj
