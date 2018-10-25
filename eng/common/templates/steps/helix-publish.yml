@@ -14,11 +14,14 @@ parameters:
   EnableXUnitReporter: false
   WaitForWorkItemCompletion: true
 
+variables:
+  _msbuildArguments: --warnaserror false eng/common/helixpublish.proj /t:test /p:Language=msbuild
+
 steps:
   variables:
-    ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
+    - ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
       _msbuildScript: ./eng/common/msbuild.sh
-    ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
+    - ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
       _msbuildScript: eng\common\msbuild.ps1
   - script: $(_msbuildScript)
       --warnaserror false eng/common/helixpublish.proj
