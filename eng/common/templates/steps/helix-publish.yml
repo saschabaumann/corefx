@@ -17,15 +17,12 @@ parameters:
 steps:
   variables:
     _msbuildArguments: --warnaserror false eng/common/helixpublish.proj /t:test /p:Language=msbuild
-    - ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
-      _msbuildScript: ./eng/common/msbuild.sh
-    - ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
-      _msbuildScript: eng\common\msbuild.ps1
-  - script: $(_msbuildScript)
-      --warnaserror false eng/common/helixpublish.proj
-      /t:test
-      /p:Language=msbuild
-    displayName: Send job to Helix
+  - ${{ if ne(parameters.agentOs, 'Windows_NT') }}:
+    - script: ./eng/common/msbuild.sh $(_msbuildArguments)
+      displayName: Send job to Helix
+  - ${{ if eq(parameters.agentOs, 'Windows_NT') }}:
+    - script: eng\common\msbuild.ps1 $(_msbuildArguments)
+      displayName: Send job to Helix
     env:
       HelixSource: ${{ parameters.HelixSource }}
       HelixType: ${{ parameters.HelixType }}
