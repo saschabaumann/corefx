@@ -6,15 +6,17 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <HelixCorrelationPayload Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\test-runtime*.zip">
-      <PayloadArchive>%(Identity)</PayloadArchive>
-    </HelixCorrelationPayload>
-  </ItemGroup>
-
-  <ItemGroup>
-    <HelixWorkItem Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\tests\**\*.zip" Exclude="@(HelixCorrelationPayload)">
+    <HelixCorrelationPayload Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\test-runtime*.zip" />
+    
+    <_WorkItem Include="$(BUILD_SOURCESDIRECTORY)\*\tests\*\archive\tests\**\*.zip" Exclude="@(HelixCorrelationPayload)">
       <PayloadArchive>%(Identity)</PayloadArchive>
       <Command>$(HelixCommand)</Command>
-    </HelixWorkItem>
+    </_WorkItem>
   </ItemGroup>
+
+  <Target Name="BuildHelixWorkItem" BeforeTargets="Test">
+    <ItemGroup>
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')" />
+    </ItemGroup>
+  </Target>
 </Project>
