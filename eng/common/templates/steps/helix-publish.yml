@@ -2,17 +2,21 @@ parameters:
   HelixSource: 'pr/dotnet-github-anon-kaonashi-bot'
   HelixType: ̓'tests/default'
   HelixBuild: $(Build.BuildNumber)
-  HelixCorrelationPayload: ''
   HelixTargetQueues: ''
   HelixAccessToken: ''
   HelixPreCommands: ''
   HelixPostCommands: ''
   WorkItemDirectory: ''
-  WorkItemCommand: ''
   WorkItemArchiveWildCard: ''
-  IncludeDotNetSdk: false
+  WorkItemCommand: ''
+  HelixCorrelationPayload: ''
+  IncludeDotNetCli: false
+  DotNetCliPackageType: ''
+  DotNetCliVersion: ''
   EnableXUnitReporter: false
   WaitForWorkItemCompletion: true
+  condition: succeeded()
+  continueOnError: false
 
 steps:
   - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
@@ -37,10 +41,13 @@ steps:
       HelixPreCommands: ${{ parameters.HelixPreCommands }}
       HelixPostCommands: ${{ parameters.HelixPostCommands }}
       HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
       WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      IncludeDotNetCli: ${{ parameters.IncludeDotNetCli }}
+      DotNetCliPackageType: ${{ parameters.DotNetCliPackageType }}
+      DotNetCliVersion: ${{ parameters.DotNetCliVersion }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
       WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
-      
+    condition: ${{ parameters.condition }}
+    continueOnError: ${{ parameters.continueOnError }}

@@ -14,22 +14,22 @@ phases:
     parameters:
       name: Linux
       queue:
-        # container: LinuxContainer
-        name: dotnet-external-temp
+        container: LinuxContainer
+        name: Hosted Ubuntu 1604
       steps:
-      # - script: ./build.sh
-      #     $(_commonProps)
-      #   displayName: Build Sources
-      # - script: ./build.sh
-      #     -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
-      #   displayName: Build Tests
-      # - script: ./eng/common/msbuild.sh
-      #     --warnaserror false src/upload-tests.proj
-      #     /t:CompressRuntimeDir
-      #     /p:ArchGroup=x64
-      #     /p:ConfigurationGroup=Debug
-      #     /p:TargetOS=Linux
-      #   displayName: Compress Runtime Directory
+      - script: ./build.sh
+          $(_commonProps)
+        displayName: Build Sources
+      - script: ./build.sh
+          -test $(_commonProps) /p:SkipTests=true /p:ArchiveTests=true /p:EnableDumpling=true
+        displayName: Build Tests
+      - script: ./eng/common/msbuild.sh
+          --warnaserror false src/upload-tests.proj
+          /t:CompressRuntimeDir
+          /p:ArchGroup=x64
+          /p:ConfigurationGroup=Debug
+          /p:TargetOS=Linux
+        displayName: Compress Runtime Directory
       - template: /eng/common/templates/steps/helix-publish.yml
         parameters:
           HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
