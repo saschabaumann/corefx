@@ -18,7 +18,7 @@
       <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
 
       <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
-        <PayloadArchive>%(_WorkItem.Identity)</PayloadArchive>
+        <PayloadArchive>%(Identity)</PayloadArchive>
         <Command>$(WorkItemCommand)</Command>
       </HelixWorkItem>
     </ItemGroup>
