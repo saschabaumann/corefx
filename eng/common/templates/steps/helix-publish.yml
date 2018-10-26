@@ -16,39 +16,31 @@ parameters:
 
 steps:
   - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
-    - script: ./eng/common/msbuild.sh eng/common/helixpublish.proj /t:test /p:Language=msbuild
-      displayName: Send job to Helix
-      env:
-        HelixSource: ${{ parameters.HelixSource }}
-        HelixType: ${{ parameters.HelixType }}
-        HelixBuild: ${{ parameters.HelixBuild }}
-        HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-        HelixAccessToken: ${{ parameters.HelixAccessToken }}
-        HelixPreCommands: ${{ parameters.HelixPreCommands }}
-        HelixPostCommands: ${{ parameters.HelixPostCommands }}
-        HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-        IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-        EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-        WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-        WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-        WorkItemCommand: ${{ parameters.WorkItemCommand }}
-        WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
+    - script: PATH=$(Build.SourcesDirectory)/.dotnet:$PATH
+      displayName: Add dotnet to PATH
   - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
-    - script: ./eng/common/msbuild.sh eng/common/helixpublish.proj /t:test /p:Language=msbuild
-      displayName: Send job to Helix
-      env:
-        HelixSource: ${{ parameters.HelixSource }}
-        HelixType: ${{ parameters.HelixType }}
-        HelixBuild: ${{ parameters.HelixBuild }}
-        HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-        HelixAccessToken: ${{ parameters.HelixAccessToken }}
-        HelixPreCommands: ${{ parameters.HelixPreCommands }}
-        HelixPostCommands: ${{ parameters.HelixPostCommands }}
-        HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-        IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-        EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-        WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-        WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-        WorkItemCommand: ${{ parameters.WorkItemCommand }}
-        WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
+    - script: set PATH=$(Build.SourcesDirectory)\.dotnet;%PATH%
+      displayName: Add dotnet to PATH
+  - task: DotNetCoreCLI@2
+    inputs:
+      command: custom
+      projects: eng/common/helixpublish.proj
+      custom: msbuild
+      arguments: '/t:test /p:Language=msbuild'
+    displayName: Send job to Helix
+    env:
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
+      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
       
