@@ -33,6 +33,7 @@ phases:
       - template: /eng/common/templates/steps/helix-publish.yml
         parameters:
           HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
+          HelixType: test/functional/cli/
           HelixBuild: $(Build.BuildNumber)
           HelixTargetQueues: Ubuntu.1604.Amd64.Open
           HelixPreCommands: chmod +x *.sh

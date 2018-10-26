@@ -15,11 +15,12 @@
           Condition="'$(WorkItemArchiveWildCard)' != ''"
           BeforeTargets="Test">
     <ItemGroup>
-      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="@(HelixCorrelationPayload)">
-        <PayloadArchive>%(Identity)</PayloadArchive>
+      <_WorkItem Include="$(WorkItemArchiveWildCard)" Exclude="$(HelixCorrelationPayload)" />
+
+      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')">
+        <PayloadArchive>%(_WorkItem.Identity)</PayloadArchive>
         <Command>$(WorkItemCommand)</Command>
-      </_WorkItem>
-      <HelixWorkItem Include="@(_WorkItem -> '%(FileName)')" />
+      </HelixWorkItem>
     </ItemGroup>
   </Target>
 </Project>
