@@ -1,20 +1,3 @@
-variables:
-  _env:
-    HelixSource: ${{ parameters.HelixSource }}
-    HelixType: ${{ parameters.HelixType }}
-    HelixBuild: ${{ parameters.HelixBuild }}
-    HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-    HelixAccessToken: ${{ parameters.HelixAccessToken }}
-    HelixPreCommands: ${{ parameters.HelixPreCommands }}
-    HelixPostCommands: ${{ parameters.HelixPostCommands }}
-    HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-    IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-    EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-    WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-    WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-    WorkItemCommand: ${{ parameters.WorkItemCommand }}
-    WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
-
 parameters:
   HelixSource: 'pr/dotnet-github-anon-kaonashi-bot'
   HelixType: ̓'tests/default'
@@ -32,6 +15,22 @@ parameters:
   WaitForWorkItemCompletion: true
 
 steps:
+  variables:
+    _env:
+      HelixSource: ${{ parameters.HelixSource }}
+      HelixType: ${{ parameters.HelixType }}
+      HelixBuild: ${{ parameters.HelixBuild }}
+      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+      HelixAccessToken: ${{ parameters.HelixAccessToken }}
+      HelixPreCommands: ${{ parameters.HelixPreCommands }}
+      HelixPostCommands: ${{ parameters.HelixPostCommands }}
+      HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
+      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
+      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+      WorkItemCommand: ${{ parameters.WorkItemCommand }}
+      WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
   - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
     - script: ./eng/common/msbuild.sh eng/common/helixpublish.proj /t:test /p:Language=msbuild
       displayName: Send job to Helix
