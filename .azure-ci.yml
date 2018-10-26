@@ -36,7 +36,7 @@ phases:
           HelixType: test/functional/cli/
           HelixBuild: $(Build.BuildNumber)
           HelixTargetQueues: Ubuntu.1604.Amd64.Open
-          HelixPreCommands: chmod +x HELIX_WORKITEM_ROOT/*.sh
+          HelixPreCommands: chmod +x $HELIX_WORKITEM_ROOT/*.sh
           WorkItemCommand: ./RunTests.sh $HELIX_CORRELATION_PAYLOAD
           EnableXUnitReporter: true
           HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
