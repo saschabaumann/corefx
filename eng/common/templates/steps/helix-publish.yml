@@ -14,29 +14,32 @@ parameters:
   EnableXUnitReporter: false
   WaitForWorkItemCompletion: true
 
+variables:
+  _env:
+    HelixSource: ${{ parameters.HelixSource }}
+    HelixType: ${{ parameters.HelixType }}
+    HelixBuild: ${{ parameters.HelixBuild }}
+    HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
+    HelixAccessToken: ${{ parameters.HelixAccessToken }}
+    HelixPreCommands: ${{ parameters.HelixPreCommands }}
+    HelixPostCommands: ${{ parameters.HelixPostCommands }}
+    HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
+    IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
+    EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
+    WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
+    WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
+    WorkItemCommand: ${{ parameters.WorkItemCommand }}
+    WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
+
 steps:
-  - script: echo $(Build.SourcesDirectory)
-    displayName: Print Directory
-  - task: DotNetCoreCLI@2
-    inputs:
-      command: custom
-      projects: eng/common/helixpublish.proj
-      custom: msbuild
-      arguments: '/t:test /p:Language=msbuild'
-      workingDirectory: $(Build.SourcesDirectory).dotnet
-    displayName: Send job to Helix
-    env:
-      HelixSource: ${{ parameters.HelixSource }}
-      HelixType: ${{ parameters.HelixType }}
-      HelixBuild: ${{ parameters.HelixBuild }}
-      HelixTargetQueues: ${{ parameters.HelixTargetQueues }}
-      HelixAccessToken: ${{ parameters.HelixAccessToken }}
-      HelixPreCommands: ${{ parameters.HelixPreCommands }}
-      HelixPostCommands: ${{ parameters.HelixPostCommands }}
-      HelixCorrelationPayload: ${{ parameters.HelixCorrelationPayload }}
-      IncludeDotNetSdk: ${{ parameters.IncludeDotNetSdk }}
-      EnableXUnitReporter: ${{ parameters.EnableXUnitReporter }}
-      WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
-      WorkItemDirectory: ${{ parameters.WorkItemDirectory }}
-      WorkItemCommand: ${{ parameters.WorkItemCommand }}
-      WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
+  - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
+    - script: ./eng/common/msbuild.sh eng/common/helixpublish.proj /t:test /p:Language=msbuild
+      displayName: Send job to Helix
+      env:
+        ${{ insert }}: $(_env)
+  - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
+    - script: ./eng/common/msbuild.sh eng/common/helixpublish.proj /t:test /p:Language=msbuild
+      displayName: Send job to Helix
+      env:
+        ${{ insert }}: $(_env)
+      
