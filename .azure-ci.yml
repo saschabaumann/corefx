@@ -15,7 +15,7 @@ phases:
       name: Linux
       queue:
         # container: LinuxContainer
-        name: Hosted Ubuntu 1604
+        name: dotnet-external-temp
       steps:
       # - script: ./build.sh
       #     $(_commonProps)
