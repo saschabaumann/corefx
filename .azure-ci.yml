@@ -8,7 +8,7 @@ resources:
 
 variables:
   _commonProps: -includetests /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:SkipTests=true /p:ArchiveTests=true
-  _os: $(Agent.OS)
+  _os: 'Windows'
 
 phases:
   # - template: /eng/common/templates/phases/base.yml
