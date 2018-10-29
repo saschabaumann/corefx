@@ -22,7 +22,7 @@ steps:
   - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
     - script: eng/common/msbuild.sh
               eng/common/helixpublish.proj /t:test
-      displayName: Send job to Helix
+      displayName: Send job to Helix Windows
       condition: ${{ parameters.condition }}
       continueOnError: ${{ parameters.continueOnError }}
       env:
@@ -44,8 +44,8 @@ steps:
         WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
   - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
     - powershell: eng\common\msbuild.ps1
-              eng\common\helixpublish.proj /t:test
-      displayName: Send job to Helix
+                  eng\common\helixpublish.proj /t:test
+      displayName: Send job to Helix Windows
       condition: ${{ parameters.condition }}
       continueOnError: ${{ parameters.continueOnError }}
       env:
