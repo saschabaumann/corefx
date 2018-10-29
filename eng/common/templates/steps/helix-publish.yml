@@ -43,7 +43,7 @@ steps:
         WaitForWorkItemCompletion: ${{ parameters.WaitForWorkItemCompletion }}
         WorkItemArchiveWildCard: ${{ parameters.WorkItemArchiveWildCard }}
   - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
-    - script: eng\common\msbuild.ps1
+    - powershell: eng\common\msbuild.ps1
               eng\common\helixpublish.proj /t:test
       displayName: Send job to Helix
       condition: ${{ parameters.condition }}

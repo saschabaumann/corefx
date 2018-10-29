@@ -7,8 +7,7 @@ resources:
     image: microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2
 
 variables:
-  _commonProps: -includetests /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:SkipTests=true
-                /p:ArchiveTests=true
+  _commonProps: -includetests /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:SkipTests=true /p:ArchiveTests=true
 
 phases:
   - template: /eng/common/templates/phases/base.yml
@@ -46,7 +45,7 @@ phases:
       steps:
       - script: build.cmd -ci $(_commonProps)
         displayName: Build Sources and Tests
-      - script: eng\common\msbuild.ps1
+      - powershell: eng\common\msbuild.ps1
           -warnaserror:0 src\upload-tests.proj
           /t:CompressRuntimeDir
           /p:ArchGroup=x64
