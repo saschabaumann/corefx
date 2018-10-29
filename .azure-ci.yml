@@ -10,56 +10,57 @@ variables:
   _commonProps: -includetests /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:SkipTests=true /p:ArchiveTests=true
 
 phases:
-  - template: /eng/common/templates/phases/base.yml
-    parameters:
-      name: Linux
-      queue:
-        container: LinuxContainer
-        name: Hosted Ubuntu 1604
-      steps:
-      - script: ./build.sh --ci $(_commonProps)
-        displayName: Build Sources and Tests
-      - script: ./eng/common/msbuild.sh
-          --warnaserror false src/upload-tests.proj
-          /t:CompressRuntimeDir
-          /p:ArchGroup=x64
-          /p:ConfigurationGroup=Debug
-          /p:TargetOS=Linux
-        displayName: Compress Runtime Directory
-      - template: /eng/common/templates/steps/helix-publish.yml
-        parameters:
-          HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
-          HelixType: test/functional/cli/
-          HelixBuild: $(Build.BuildNumber)
-          HelixTargetQueues: Ubuntu.1604.Amd64.Open
-          WorkItemCommand: ./RunTests.sh $HELIX_CORRELATION_PAYLOAD
-          EnableXUnitReporter: true
-          HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
-          HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
-          WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
+  # - template: /eng/common/templates/phases/base.yml
+  #   parameters:
+  #     name: Linux
+  #     queue:
+  #       container: LinuxContainer
+  #       name: Hosted Ubuntu 1604
+  #     steps:
+  #     - script: ./build.sh --ci $(_commonProps)
+  #       displayName: Build Sources and Tests
+  #     - script: ./eng/common/msbuild.sh
+  #         --warnaserror false src/upload-tests.proj
+  #         /t:CompressRuntimeDir
+  #         /p:ArchGroup=x64
+  #         /p:ConfigurationGroup=Debug
+  #         /p:TargetOS=Linux
+  #       displayName: Compress Runtime Directory
+  #     - template: /eng/common/templates/steps/helix-publish.yml
+  #       parameters:
+  #         HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
+  #         HelixType: test/functional/cli/
+  #         HelixBuild: $(Build.BuildNumber)
+  #         HelixTargetQueues: Ubuntu.1604.Amd64.Open
+  #         WorkItemCommand: ./RunTests.sh $HELIX_CORRELATION_PAYLOAD
+  #         EnableXUnitReporter: true
+  #         HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+  #         HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
+  #         WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
   - template: /eng/common/templates/phases/base.yml
     parameters:
       name: Windows
       queue:
         name: dotnet-external-temp
       steps:
-      - script: build.cmd -ci $(_commonProps)
-        displayName: Build Sources and Tests
-      - powershell: eng\common\msbuild.ps1
-          -warnaserror:0 src\upload-tests.proj
-          /t:CompressRuntimeDir
-          /p:ArchGroup=x64
-          /p:ConfigurationGroup=Debug
-          /p:TargetOS=Windows_NT
-        displayName: Compress Runtime Directory
-      - template: /eng/common/templates/steps/helix-publish.yml
-        parameters:
-          HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
-          HelixType: test/functional/cli/
-          HelixBuild: $(Build.BuildNumber)
-          HelixTargetQueues: Windows.10.Amd64.ClientRS4.ES.Open
-          WorkItemCommand: RunTests.cmd %HELIX_CORRELATION_PAYLOAD%
-          EnableXUnitReporter: true
-          HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
-          HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
-          WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
+        - script: echo variables['Agent.OS']
+      # - script: build.cmd -ci $(_commonProps)
+      #   displayName: Build Sources and Tests
+      # - powershell: eng\common\msbuild.ps1
+      #     -warnaserror:0 src\upload-tests.proj
+      #     /t:CompressRuntimeDir
+      #     /p:ArchGroup=x64
+      #     /p:ConfigurationGroup=Debug
+      #     /p:TargetOS=Windows_NT
+      #   displayName: Compress Runtime Directory
+      # - template: /eng/common/templates/steps/helix-publish.yml
+      #   parameters:
+      #     HelixSource: pr/dotnet/corefx/$(Build.SourceBranch)
+      #     HelixType: test/functional/cli/
+      #     HelixBuild: $(Build.BuildNumber)
+      #     HelixTargetQueues: Windows.10.Amd64.ClientRS4.ES.Open
+      #     WorkItemCommand: RunTests.cmd %HELIX_CORRELATION_PAYLOAD%
+      #     EnableXUnitReporter: true
+      #     HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
+      #     HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
+      #     WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
