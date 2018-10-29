@@ -8,7 +8,9 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(HelixCorrelationPayload)' != ''">
-    <HelixCorrelationPayload Include="$(HelixCorrelationPayload)" />
+    <HelixCorrelationPayload Include="$(HelixCorrelationPayload)">
+      <Uri>MyUri</Uri>
+    </HelixCorrelationPayload>
   </ItemGroup>
 
   <Target Name="BuildHelixWorkItem"
