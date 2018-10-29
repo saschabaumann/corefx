@@ -44,12 +44,12 @@ phases:
       queue:
         name: dotnet-external-temp
       steps:
-        - ${{ if ne(variables._os, 'Windows_NT') }}:
-          - script: echo $(_os)
-            displayName: Linux
         - ${{ if eq(variables._os, 'Windows_NT') }}:
           - script: echo I'm on windows
             displayName: Windows Script
+        - ${{ if ne(variables._os, 'Windows_NT') }}:
+          - script: echo $(_os)
+            displayName: Linux
       # - script: build.cmd -ci $(_commonProps)
       #   displayName: Build Sources and Tests
       # - powershell: eng\common\msbuild.ps1
