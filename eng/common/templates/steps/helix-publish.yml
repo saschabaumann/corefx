@@ -22,7 +22,7 @@ steps:
   - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
     - script: eng/common/msbuild.sh
               eng/common/helixpublish.proj /t:test
-      displayName: Send job to Helix Windows
+      displayName: Send job to Helix Linux
       condition: ${{ parameters.condition }}
       continueOnError: ${{ parameters.continueOnError }}
       env:
