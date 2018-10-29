@@ -38,12 +38,14 @@ phases:
   #         HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
   #         WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
   - template: /eng/common/templates/phases/base.yml
+    variables:
+      _os: $(Agent.OS)
     parameters:
       name: Windows
       queue:
         name: dotnet-external-temp
       steps:
-        - script: echo variables['Agent.OS']
+        - script: echo $(_os)
       # - script: build.cmd -ci $(_commonProps)
       #   displayName: Build Sources and Tests
       # - powershell: eng\common\msbuild.ps1
