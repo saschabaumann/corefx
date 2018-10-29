@@ -8,6 +8,7 @@ resources:
 
 variables:
   _commonProps: -includetests /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:SkipTests=true /p:ArchiveTests=true
+  _os: $(Agent.OS)
 
 phases:
   # - template: /eng/common/templates/phases/base.yml
@@ -38,8 +39,6 @@ phases:
   #         HelixCorrelationPayload: $(Build.SourcesDirectory)\*\tests\*\archive\test-runtime*.zip
   #         WorkItemArchiveWildCard: $(Build.SourcesDirectory)\*\tests\*\archive\tests\**\*.zip
   - template: /eng/common/templates/phases/base.yml
-    variables:
-      _os: $(Agent.OS)
     parameters:
       name: Windows
       queue:
