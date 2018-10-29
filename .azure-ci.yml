@@ -44,10 +44,10 @@ phases:
       queue:
         name: dotnet-external-temp
       steps:
-        - ${{ if ne(variables['Agent.OS'], 'Windows_NT') }}:
+        - ${{ if ne($(Agent.OS), 'Windows_NT') }}:
           - script: echo $(_os)
             displayName: Linux
-        - ${{ if eq(variables['Agent.OS'], 'Windows_NT') }}:
+        - ${{ if eq($(Agent.OS), 'Windows_NT') }}:
           - script: echo I'm on windows
             displayName: Windows Script
       # - script: build.cmd -ci $(_commonProps)
