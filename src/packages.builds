@@ -1,16 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="BuildAndTest" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\Directory.Build.props" />
 
-  <PropertyGroup>
-    <PackageReportDir Condition="'$(PackageReportDir)' == ''">$(BinDir)pkg/reports/</PackageReportDir>
+  <PropertyGroup Condition="'$(DotNetBuildFromSource)' == 'true'">
+    <AdditionalBuildConfigurations>$(AdditionalBuildConfigurations);package-$(ConfigurationGroup)</AdditionalBuildConfigurations>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" Condition="'$(SkipManagedPackageBuild)' != 'true'">
+  <ItemGroup Condition="'$(SkipManagedPackageBuild)' != 'true'">
+    <Project Include="$(MSBuildThisFileDirectory)..\pkg\*\*.builds" >
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
-    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(SkipManagedPackageBuild)' != 'true' AND '$(BuildAllConfigurations)' == 'true'">
+    <Project Include="*\pkg\**\*.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true' OR '$(DotNetBuildFromSource)' == 'true'">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
   </ItemGroup>
@@ -55,18 +54,6 @@
 
   </Target>
 
-  <UsingTask TaskName="GenerateNetStandardSupportTable" AssemblyFile="$(PackagingTaskDir)Microsoft.DotNet.Build.Tasks.Packaging.dll" />
-  <Target Name="GenerateNETStandardDocs">
-    <Error Condition="'$(WcfPackageReportDir)' == ''"
-           Text="WcfPackageReportDir must be specified to point to the package report directory of the WCF repo.  EG: /p:WcfPackageReportDir=c:\src\wcf\bin\pkg\reports\" />
-    <ItemGroup>
-      <Reports Include="$(PackageReportDir)*.json" />
-      <Reports Include="$(WcfPackageReportDir)*.json" />
-    </ItemGroup>
-
-    <GenerateNetStandardSupportTable Reports="@(Reports)" DocFilePath="$(ProjectDir)Documentation\architecture\net-platform-standard.md" InsertIntoFile="True" />
-  </Target>
-
   <!-- Generate a version text file we include in our packages -->
   <Target Name="GenerateVersionFileForPackages"
           BeforeTargets="BuildAllProjects"
@@ -82,6 +69,5 @@
       Overwrite="true" />
   </Target>
 
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.targets))\Directory.Build.targets" />
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+  <Import Project="$(RepositoryEngineeringDir)dir.traversal.targets" />
 </Project>

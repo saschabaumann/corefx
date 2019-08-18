@@ -13,7 +13,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return source is AppendPrependIterator<TSource> appendable
@@ -25,7 +25,7 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             return source is AppendPrependIterator<TSource> appendable
@@ -220,7 +220,7 @@ namespace System.Linq
                             return false;
                         }
 
-                        _enumerator = _appended.GetEnumerator(_appendCount);
+                        _enumerator = ((IEnumerable<TSource>)_appended.ToArray(_appendCount)).GetEnumerator();
                         _state = 4;
                         goto case 4;
                     case 4:

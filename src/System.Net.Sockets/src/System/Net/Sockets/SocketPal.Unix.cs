@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -84,11 +85,10 @@ namespace System.Net.Sockets
                 };
 
                 errno = Interop.Sys.ReceiveMessage(
-                    socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    socket,
                     &messageHeader,
                     flags,
                     &received);
-                GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 receivedFlags = messageHeader.Flags;
                 sockAddrLen = messageHeader.SocketAddressLen;
@@ -125,11 +125,10 @@ namespace System.Net.Sockets
 
                 long bytesSent = 0;
                 errno = Interop.Sys.SendMessage(
-                    socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    socket,
                     &messageHeader,
                     flags,
                     &bytesSent);
-                GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 sent = checked((int)bytesSent);
             }
@@ -188,11 +187,10 @@ namespace System.Net.Sockets
 
                     long bytesSent = 0;
                     errno = Interop.Sys.SendMessage(
-                        socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        socket,
                         &messageHeader,
                         flags,
                         &bytesSent);
-                    GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     sent = checked((int)bytesSent);
                 }
@@ -235,7 +233,7 @@ namespace System.Net.Sockets
 
         private static unsafe long SendFile(SafeSocketHandle socket, SafeFileHandle fileHandle, ref long offset, ref long count, out Interop.Error errno)
         {
-            long bytesSent; 
+            long bytesSent;
             errno = Interop.Sys.SendFile(socket, fileHandle, offset, count, out bytesSent);
             offset += bytesSent;
             count -= bytesSent;
@@ -311,11 +309,10 @@ namespace System.Net.Sockets
                     };
 
                     errno = Interop.Sys.ReceiveMessage(
-                        socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        socket,
                         &messageHeader,
                         flags,
                         &received);
-                    GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     receivedFlags = messageHeader.Flags;
                     sockAddrLen = messageHeader.SocketAddressLen;
@@ -372,11 +369,10 @@ namespace System.Net.Sockets
                 };
 
                 errno = Interop.Sys.ReceiveMessage(
-                    socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                    socket,
                     &messageHeader,
                     flags,
                     &received);
-                GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                 receivedFlags = messageHeader.Flags;
                 sockAddrLen = messageHeader.SocketAddressLen;
@@ -435,11 +431,10 @@ namespace System.Net.Sockets
 
                     long received = 0;
                     errno = Interop.Sys.ReceiveMessage(
-                        socket.DangerousGetHandle(), // to minimize chances of handle recycling from misuse, this should use DangerousAddRef/Release, but it adds too much overhead
+                        socket,
                         &messageHeader,
                         flags,
                         &received);
-                    GC.KeepAlive(socket); // small extra safe guard against handle getting collected/finalized while P/Invoke in progress
 
                     receivedFlags = messageHeader.Flags;
                     int sockAddrLen = messageHeader.SocketAddressLen;
@@ -1154,7 +1149,7 @@ namespace System.Net.Sockets
         {
             fixed (byte* pinnedValue = optionValue)
             {
-                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue.Length);
+                Interop.Error err = Interop.Sys.SetSockOpt(handle, optionLevel, optionName, pinnedValue, optionValue != null ? optionValue.Length : 0);
                 return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
             }
         }
@@ -1433,7 +1428,7 @@ namespace System.Net.Sockets
             Interop.Sys.PollEvent* events, int eventsLength,
             int microseconds)
         {
-            // Add each of the list's contents to the events array 
+            // Add each of the list's contents to the events array
             Debug.Assert(eventsLength == checkReadInitialCount + checkWriteInitialCount + checkErrorInitialCount, "Invalid eventsLength");
             int offset = 0;
             AddToPollArray(events, eventsLength, checkRead, ref offset, Interop.Sys.PollEvents.POLLIN | Interop.Sys.PollEvents.POLLHUP);
@@ -1554,7 +1549,7 @@ namespace System.Net.Sockets
         public static SocketError SendAsync(SafeSocketHandle handle, byte[] buffer, int offset, int count, SocketFlags socketFlags, OverlappedAsyncResult asyncResult)
         {
             int bytesSent;
-            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.SendAsync(buffer, offset, count, socketFlags, out bytesSent, asyncResult.CompletionCallback, CancellationToken.None);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesSent, null, 0, SocketFlags.None, SocketError.Success);
@@ -1576,7 +1571,7 @@ namespace System.Net.Sockets
         public static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, Action<long, SocketError> callback) =>
             SendFileAsync(handle, fileStream, 0, (int)fileStream.Length, callback);
 
-        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, int offset, int count, Action<long, SocketError> callback)
+        private static SocketError SendFileAsync(SafeSocketHandle handle, FileStream fileStream, long offset, int count, Action<long, SocketError> callback)
         {
             long bytesSent;
             SocketError socketError = handle.AsyncContext.SendFileAsync(fileStream.SafeFileHandle, offset, count, out bytesSent, callback);
@@ -1600,24 +1595,26 @@ namespace System.Net.Sockets
                     SendPacketsElement e = elements[i];
                     if (e != null)
                     {
-                        if (e.FilePath == null)
+                        if (e.Buffer != null)
                         {
                             bytesTransferred += await socket.SendAsync(new ArraySegment<byte>(e.Buffer, e.Offset, e.Count), SocketFlags.None).ConfigureAwait(false);
                         }
                         else
                         {
-                            FileStream fs = files[i];
-                            if (e.Offset > fs.Length - e.Count)
+                            FileStream fs = files[i] ?? e.FileStream;
+                            if (e.Count > fs.Length - e.OffsetLong)
                             {
                                 throw new ArgumentOutOfRangeException();
                             }
 
                             var tcs = new TaskCompletionSource<SocketError>();
-                            error = SendFileAsync(socket.SafeHandle, fs, e.Offset, e.Count > 0 ? e.Count : checked((int)(fs.Length - e.Offset)), (transferred, se) =>
-                            {
-                                bytesTransferred += transferred;
-                                tcs.TrySetResult(se);
-                            });
+                            error = SendFileAsync(socket.SafeHandle, fs, e.OffsetLong,
+                                e.Count > 0 ? e.Count : checked((int)(fs.Length - e.OffsetLong)),
+                                (transferred, se) =>
+                                {
+                                    bytesTransferred += transferred;
+                                    tcs.TrySetResult(se);
+                                });
                             if (error == SocketError.IOPending)
                             {
                                 error = await tcs.Task.ConfigureAwait(false);
@@ -1676,7 +1673,7 @@ namespace System.Net.Sockets
         {
             int bytesReceived;
             SocketFlags receivedFlags;
-            SocketError socketError = handle.AsyncContext.ReceiveAsync(new Memory<byte>(buffer, offset, count), socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback);
+            SocketError socketError = handle.AsyncContext.ReceiveAsync(new Memory<byte>(buffer, offset, count), socketFlags, out bytesReceived, out receivedFlags, asyncResult.CompletionCallback, CancellationToken.None);
             if (socketError == SocketError.Success)
             {
                 asyncResult.CompletionCallback(bytesReceived, null, 0, receivedFlags, SocketError.Success);

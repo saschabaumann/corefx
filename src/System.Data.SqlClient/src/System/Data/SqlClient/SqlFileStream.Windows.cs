@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -10,7 +10,6 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
-using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
 using System.Buffers;
 
@@ -18,7 +17,7 @@ namespace System.Data.SqlTypes
 {
     public sealed partial class SqlFileStream : System.IO.Stream
     {
-        // NOTE: if we ever unseal this class, be sure to specify the Name, SafeFileHandle, and 
+        // NOTE: if we ever unseal this class, be sure to specify the Name, SafeFileHandle, and
         // TransactionContext accessors as virtual methods. Doing so now on a sealed class
         // generates a compiler error (CS0549)
 
@@ -27,8 +26,8 @@ namespace System.Data.SqlTypes
         // SQLBUVSTS# 193123 - disable lazy flushing of written data in order to prevent
         // potential exceptions during Close/Finalization. Since System.IO.FileStream will
         // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
-        // usage, will not be used and the user buffer will automatically flush directly to 
-        // the disk cache. In pathological scenarios where the client is writing a single 
+        // usage, will not be used and the user buffer will automatically flush directly to
+        // the disk cache. In pathological scenarios where the client is writing a single
         // byte at a time, we'll explicitly call flush ourselves.
         internal const int DefaultBufferSize = 1;
 
@@ -42,7 +41,7 @@ namespace System.Data.SqlTypes
         private string _m_path;
         private byte[] _m_txn;
         private bool _m_disposed;
-        private static byte[] s_eaNameString = new byte[]
+        private static readonly byte[] s_eaNameString = new byte[]
         {
             (byte)'F', (byte)'i', (byte)'l', (byte)'e', (byte)'s', (byte)'t', (byte)'r', (byte)'e', (byte)'a', (byte)'m', (byte)'_',
             (byte)'T', (byte)'r', (byte)'a', (byte)'n', (byte)'s', (byte)'a', (byte)'c', (byte)'t', (byte)'i', (byte)'o', (byte)'n', (byte)'_',
@@ -274,7 +273,6 @@ namespace System.Data.SqlTypes
             _m_fs.Flush();
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
@@ -291,7 +289,6 @@ namespace System.Data.SqlTypes
             return _m_fs.EndRead(asyncResult);
         }
 
-        [HostProtection(ExternalThreading = true)]
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
         {
             if (_m_disposed)
@@ -302,8 +299,8 @@ namespace System.Data.SqlTypes
             // SQLBUVSTS# 193123 - disable lazy flushing of written data in order to prevent
             // potential exceptions during Close/Finalization. Since System.IO.FileStream will
             // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
-            // usage, will not be used and the user buffer will automatically flush directly to 
-            // the disk cache. In pathological scenarios where the client is writing a single 
+            // usage, will not be used and the user buffer will automatically flush directly to
+            // the disk cache. In pathological scenarios where the client is writing a single
             // byte at a time, we'll explicitly call flush ourselves.
             if (count == 1)
             {
@@ -365,7 +362,7 @@ namespace System.Data.SqlTypes
             // potential exceptions during Close/Finalization. Since System.IO.FileStream will
             // not allow for a zero byte buffer, we'll create a one byte buffer which, in normal
             // usage, will cause System.IO.FileStream to utilize the user-supplied buffer and
-            // automatically flush the data directly to the disk cache. In pathological scenarios 
+            // automatically flush the data directly to the disk cache. In pathological scenarios
             // where the user is writing a single byte at a time, we'll explicitly call flush ourselves.
             if (count == 1)
             {
@@ -393,7 +390,7 @@ namespace System.Data.SqlTypes
         #endregion
 
         [Conditional("DEBUG")]
-        static private void AssertPathFormat(string path)
+        private static void AssertPathFormat(string path)
         {
             Debug.Assert(path != null);
             Debug.Assert(path == path.Trim());
@@ -401,7 +398,7 @@ namespace System.Data.SqlTypes
             Debug.Assert(path.StartsWith(@"\\", StringComparison.OrdinalIgnoreCase));
         }
 
-        static private string GetFullPathInternal(string path)
+        private static string GetFullPathInternal(string path)
         {
             //-----------------------------------------------------------------
             // precondition validation should be validated by callers of this method
@@ -544,9 +541,9 @@ namespace System.Data.SqlTypes
                         ea->EaNameLength = (byte)(s_eaNameString.Length - 1); // Length does not include terminating null character.
                         ea->EaValueLength = (ushort)transactionContext.Length;
 
-                        // We could continue to do pointer math here, chose to use Span for convenience to 
+                        // We could continue to do pointer math here, chose to use Span for convenience to
                         // make sure we get the other members in the right place.
-                        Span<byte> data = new Span<byte>(buffer).Slice(headerSize);
+                        Span<byte> data = buffer.AsSpan(headerSize);
                         s_eaNameString.AsSpan().CopyTo(data);
                         data = data.Slice(s_eaNameString.Length);
                         transactionContext.AsSpan().CopyTo(data);
@@ -594,7 +591,7 @@ namespace System.Data.SqlTypes
                                 uint error = Interop.NtDll.RtlNtStatusToDosError(retval);
                                 if (error == ERROR_MR_MID_NOT_FOUND)
                                 {
-                                    // status code could not be mapped to a Win32 error code 
+                                    // status code could not be mapped to a Win32 error code
                                     error = (uint)retval;
                                 }
 
@@ -650,7 +647,7 @@ namespace System.Data.SqlTypes
         // This method exists to ensure that the requested path name is unique so that SMB/DNS is prevented
         // from collapsing a file open request to a file handle opened previously. In the SQL FILESTREAM case,
         // this would likely be a file open in another transaction, so this mechanism ensures isolation.
-        static private string InitializeNtPath(string path)
+        private static string InitializeNtPath(string path)
         {
             // Ensure we have validated and normalized the path before
             AssertPathFormat(path);
@@ -660,5 +657,3 @@ namespace System.Data.SqlTypes
         }
     }
 }
-
-

@@ -2,15 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#include "pal_crypto_types.h"
-#include "pal_compiler.h"
 #include "opensslshim.h"
+#include "pal_compiler.h"
+#include "pal_crypto_types.h"
 
 /*
 These values should be kept in sync with System.Security.Cryptography.X509Certificates.X509RevocationFlag.
 */
-typedef enum
-{
+typedef enum {
     EndCertificateOnly = 0,
     EntireChain = 1,
     ExcludeRoot = 2,
@@ -21,8 +20,7 @@ The error codes used when verifying X509 certificate chains.
 
 These values should be kept in sync with Interop.Crypto.X509VerifyStatusCode.
 */
-typedef enum
-{
+typedef enum {
     PAL_X509_V_OK = 0,
     PAL_X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = 2,
     PAL_X509_V_ERR_UNABLE_TO_GET_CRL = 3,
@@ -154,11 +152,6 @@ Shims the X509_check_purpose method.
 DLLEXPORT int32_t CryptoNative_X509CheckPurpose(X509* x, int32_t id, int32_t ca);
 
 /*
-Shims the X509_check_issued method.
-*/
-DLLEXPORT int32_t CryptoNative_X509CheckIssued(X509* issuer, X509* subject);
-
-/*
 Shims the X509_issuer_name_hash method.
 */
 DLLEXPORT uint64_t CryptoNative_X509IssuerNameHash(X509* x);
@@ -189,19 +182,14 @@ Shims the X509_EXTENSION_get_critical method.
 DLLEXPORT int32_t CryptoNative_X509ExtensionGetCritical(X509_EXTENSION* x);
 
 /*
-Shims the X509_STORE_new method.
+Returns the data portion of the first matched extension.
 */
-DLLEXPORT X509_STORE* CryptoNative_X509StoreCreate(void);
+DLLEXPORT ASN1_OCTET_STRING* CryptoNative_X509FindExtensionData(X509* x, int32_t nid);
 
 /*
 Shims the X509_STORE_free method.
 */
 DLLEXPORT void CryptoNative_X509StoreDestory(X509_STORE* v);
-
-/*
-Shims the X509_STORE_add_cert method.
-*/
-DLLEXPORT int32_t CryptoNative_X509StoreAddCert(X509_STORE* ctx, X509* x);
 
 /*
 Shims the X509_STORE_add_crl method.
@@ -228,7 +216,10 @@ DLLEXPORT void CryptoNative_X509StoreCtxDestroy(X509_STORE_CTX* v);
 /*
 Shims the X509_STORE_CTX_init method.
 */
-DLLEXPORT int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx, X509_STORE* store, X509* x509, X509Stack* extraStore);
+DLLEXPORT int32_t CryptoNative_X509StoreCtxInit(X509_STORE_CTX* ctx,
+                                                X509_STORE* store,
+                                                X509* x509,
+                                                X509Stack* extraStore);
 
 /*
 Shims the X509_verify_cert method.
@@ -239,6 +230,11 @@ DLLEXPORT int32_t CryptoNative_X509VerifyCert(X509_STORE_CTX* ctx);
 Shims the X509_STORE_CTX_get1_chain method.
 */
 DLLEXPORT X509Stack* CryptoNative_X509StoreCtxGetChain(X509_STORE_CTX* ctx);
+
+/*
+Shims the X509_STORE_CTX_get_current_cert function.
+*/
+DLLEXPORT X509* CryptoNative_X509StoreCtxGetCurrentCert(X509_STORE_CTX* ctx);
 
 /*
 Returns the interior pointer to the "untrusted" certificates collection for this X509_STORE_CTX
@@ -254,6 +250,19 @@ DLLEXPORT X509* CryptoNative_X509StoreCtxGetTargetCert(X509_STORE_CTX* ctx);
 Shims the X509_STORE_CTX_get_error method.
 */
 DLLEXPORT X509VerifyStatusCode CryptoNative_X509StoreCtxGetError(X509_STORE_CTX* ctx);
+
+/*
+Resets ctx to before the chain was built, preserving the target cert, trust store, extra cert context,
+and verify parameters.
+*/
+DLLEXPORT int32_t CryptoNative_X509StoreCtxReset(X509_STORE_CTX* ctx);
+
+/*
+Reset ctx and rebuild the chain.
+Returns -1 if CryptoNative_X509StoreCtxReset failed, otherwise returns the result of
+X509_verify_cert.
+*/
+DLLEXPORT int32_t CryptoNative_X509StoreCtxRebuildChain(X509_STORE_CTX* ctx);
 
 /*
 Shims the X509_STORE_CTX_get_error_depth method.
@@ -311,3 +320,53 @@ Unlike X509Duplicate, this modifies an existing object, so no new memory is allo
 Returns the input value.
 */
 DLLEXPORT X509* CryptoNative_X509UpRef(X509* x509);
+
+/*
+Create a new X509_STORE, considering the certificates from systemTrust and userTrust
+*/
+DLLEXPORT X509_STORE* CryptoNative_X509ChainNew(X509Stack* systemTrust, X509Stack* userTrust);
+
+/*
+Adds all of the simple certificates from null-or-empty-password PFX files in storePath to stack.
+*/
+DLLEXPORT int32_t CryptoNative_X509StackAddDirectoryStore(X509Stack* stack, char* storePath);
+
+/*
+Adds all of the certificates in src to dest and increases their reference count.
+*/
+DLLEXPORT int32_t CryptoNative_X509StackAddMultiple(X509Stack* dest, X509Stack* src);
+
+/*
+Removes any untrusted/extra certificates from the unstrusted collection that are not part of
+the current chain to make chain builds after Reset faster.
+*/
+DLLEXPORT int32_t CryptoNative_X509StoreCtxCommitToChain(X509_STORE_CTX* storeCtx);
+
+/*
+Duplicates any certificate at or below the level where the error marker is.
+
+Outputs a new store with a clone of the root, if necessary.
+The new store does not have any properties set other than the trust. (Mainly, CRLs are lost)
+*/
+DLLEXPORT int32_t CryptoNative_X509StoreCtxResetForSignatureError(X509_STORE_CTX* storeCtx, X509_STORE** newStore);
+
+/*
+Look for a cached OCSP response appropriate to the end-entity certificate using the issuer as
+determined by the chain in storeCtx.
+*/
+DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainGetCachedOcspStatus(X509_STORE_CTX* storeCtx, char* cachePath);
+
+/*
+Build an OCSP request appropriate for the end-entity certificate using the issuer (and trust) as
+determined by the chain in storeCtx.
+*/
+DLLEXPORT OCSP_REQUEST* CryptoNative_X509ChainBuildOcspRequest(X509_STORE_CTX* storeCtx);
+
+/*
+Determine if the OCSP response is acceptable, and if acceptable report the status and
+cache the result (if appropriate)
+*/
+DLLEXPORT X509VerifyStatusCode CryptoNative_X509ChainVerifyOcsp(X509_STORE_CTX* storeCtx,
+                                                                OCSP_REQUEST* req,
+                                                                OCSP_RESPONSE* resp,
+                                                                char* cachePath);

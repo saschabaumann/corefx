@@ -30,12 +30,12 @@ namespace System.Data.SqlClient
         Context = 5,     // only valid in proc.
     };
 
-    sealed internal class SqlInternalTransaction
+    internal sealed class SqlInternalTransaction
     {
         internal const long NullTransactionId = 0;
 
         private TransactionState _transactionState;
-        private TransactionType _transactionType;
+        private readonly TransactionType _transactionType;
         private long _transactionId;             // passed in the MARS headers
         private int _openResultCount;           // passed in the MARS headers
         private SqlInternalConnection _innerConnection;
@@ -152,7 +152,7 @@ namespace System.Data.SqlClient
                 {
                     // No parent, so we better be LocalFromTSQL.  Should we even return in this case -
                     // since it could be argued this is invalid?
-                    Debug.Assert(false, "Why are we calling IsOrphaned with no parent?");
+                    Debug.Fail("Why are we calling IsOrphaned with no parent?");
                     Debug.Assert(_transactionType == TransactionType.LocalFromTSQL, "invalid state");
                     result = false;
                 }
@@ -488,7 +488,7 @@ namespace System.Data.SqlClient
             // Number 1 needs to be done whenever a SqlTransaction object is completed.  Number
             // 2 is only done when a transaction is actually completed.  Since users can begin
             // transactions both in and outside of the API, and since nested begins are not actual
-            // transactions we need to distinguish between #1 and #2.  
+            // transactions we need to distinguish between #1 and #2.
 
             ZombieParent();
 

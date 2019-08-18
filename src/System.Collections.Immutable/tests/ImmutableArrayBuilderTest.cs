@@ -465,7 +465,7 @@ namespace System.Collections.Immutable.Tests
             Assert.Equal(0, array[0]);
             Assert.Equal(1, array[1]);
             Assert.Equal(2, array[2]);
-            
+
             builder[1] = 5;
             Assert.Equal(5, builder[1]);
             Assert.Equal(1, array[1]);
@@ -691,7 +691,7 @@ namespace System.Collections.Immutable.Tests
             var builder = ImmutableArray.CreateBuilder<int>(initialCapacity: 10);
             builder.Add(1);
             builder.Add(1);
-            Assert.Throws(typeof(ArgumentException), () => builder.Capacity = 1);
+            Assert.Throws<ArgumentException>(() => builder.Capacity = 1);
         }
 
         [Fact]
@@ -729,7 +729,6 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public void DebuggerAttributesValid()
         {
             DebuggerAttributes.ValidateDebuggerDisplayReferences(ImmutableArray.CreateBuilder<int>());
@@ -742,7 +741,6 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void TestDebuggerAttributes_Null()
         {
             Type proxyType = DebuggerAttributes.GetProxyType(ImmutableArray.CreateBuilder<string>(4));

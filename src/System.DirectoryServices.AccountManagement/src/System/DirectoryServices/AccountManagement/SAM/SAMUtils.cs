@@ -17,7 +17,7 @@ namespace System.DirectoryServices.AccountManagement
         // To stop the compiler from autogenerating a constructor for this class
         private SAMUtils() { }
 
-        static internal bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
+        internal static bool IsOfObjectClass(DirectoryEntry de, string classToCompare)
         {
             return string.Equals(de.SchemaClassName, classToCompare, StringComparison.OrdinalIgnoreCase);
         }
@@ -74,39 +74,25 @@ namespace System.DirectoryServices.AccountManagement
                 // Sanity check: there are no negetive OS versions, nor is there a version "0".
                 if (versionMajor <= 0 || versionMinor < 0)
                 {
-                    Debug.Fail(string.Format(
-                                    CultureInfo.CurrentCulture,
-                                    "SAMUtils.GetOSVersion: {0} claims to have negetive OS version, {1}",
-                                    computerDE.Path,
-                                    version));
-
+                    Debug.Fail("SAMUtils.GetOSVersion: {computerDE.Path} claims to have negetive OS version, {version}");
                     return false;
                 }
             }
             catch (FormatException)
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.GetOSVersion: FormatException on {0} for {1}",
-                                version,
-                                computerDE.Path));
-
+                Debug.Fail($"SAMUtils.GetOSVersion: FormatException on {version} for {computerDE.Path}");
                 return false;
             }
             catch (OverflowException)
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.GetOSVersion: OverflowException on {0} for {1}",
-                                version,
-                                computerDE.Path));
+                Debug.Fail($"SAMUtils.GetOSVersion: OverflowException on {version} for {computerDE.Path}");
                 return false;
             }
 
             return true;
         }
 
-        static internal Principal DirectoryEntryAsPrincipal(DirectoryEntry de, StoreCtx storeCtx)
+        internal static Principal DirectoryEntryAsPrincipal(DirectoryEntry de, StoreCtx storeCtx)
         {
             string className = de.SchemaClassName;
 
@@ -123,11 +109,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Fail(string.Format(
-                                CultureInfo.CurrentCulture,
-                                "SAMUtils.DirectoryEntryAsPrincipal: fell off end, Path={0}, SchemaClassName={1}",
-                                de.Path,
-                                de.SchemaClassName));
+                Debug.Fail($"SAMUtils.DirectoryEntryAsPrincipal: fell off end, Path={de.Path}, SchemaClassName={de.SchemaClassName}");
                 return null;
             }
         }
@@ -156,7 +138,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         //
 
-        static internal string PAPIQueryToRegexString(string papiString)
+        internal static string PAPIQueryToRegexString(string papiString)
         {
             StringBuilder sb = new StringBuilder(papiString.Length);
 
@@ -221,8 +203,8 @@ namespace System.DirectoryServices.AccountManagement
                 }
             }
 
-            // There was a '\\' but no character after it because we were at the 
-            // end of the string.  
+            // There was a '\\' but no character after it because we were at the
+            // end of the string.
             // Append '\\\\' to match the '\\'.
             if (escapeMode)
             {

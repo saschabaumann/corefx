@@ -32,7 +32,7 @@ namespace System.Net.WebSockets.Client.Tests
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
-        [OuterLoop("Uses external server")]
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageDueToSmallReceiveBuffer_Success(Uri server)
         {
@@ -58,7 +58,7 @@ namespace System.Net.WebSockets.Client.Tests
                 await SendAsync(cws, sendSegment, WebSocketMessageType.Binary, true, ctsDefault.Token);
 
                 WebSocketReceiveResult recvResult = await ReceiveAsync(cws, receiveSegment, ctsDefault.Token);
-                Assert.Equal(false, recvResult.EndOfMessage);
+                Assert.False(recvResult.EndOfMessage);
 
                 while (recvResult.EndOfMessage == false)
                 {
@@ -69,7 +69,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported), nameof(PartialMessagesSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_PartialMessageBeforeCompleteMessageArrives_Success(Uri server)
         {
@@ -99,7 +99,7 @@ namespace System.Net.WebSockets.Client.Tests
                         new ArraySegment<byte>(receiveBuffer, totalBytesReceived, receiveBuffer.Length - totalBytesReceived),
                         ctsDefault.Token);
 
-                    Assert.Equal(false, recvResult.EndOfMessage);
+                    Assert.False(recvResult.EndOfMessage);
                     Assert.InRange(recvResult.Count, 0, receiveBuffer.Length - totalBytesReceived);
                     totalBytesReceived += recvResult.Count;
                 }
@@ -111,7 +111,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendCloseMessageType_ThrowsArgumentExceptionWithMessage(Uri server)
         {
@@ -139,7 +139,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_MultipleOutstandingSendOperations_Throws(Uri server)
         {
@@ -198,7 +198,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ReceiveAsync_MultipleOutstandingReceiveOperations_Throws(Uri server)
         {
@@ -262,7 +262,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendAsync_SendZeroLengthPayloadAsEndOfMessage_Success(Uri server)
         {
@@ -292,16 +292,16 @@ namespace System.Net.WebSockets.Client.Tests
                 Assert.Equal(WebSocketState.Open, cws.State);
                 Assert.Equal(message.Length, recvRet.Count);
                 Assert.Equal(WebSocketMessageType.Text, recvRet.MessageType);
-                Assert.Equal(true, recvRet.EndOfMessage);
-                Assert.Equal(null, recvRet.CloseStatus);
-                Assert.Equal(null, recvRet.CloseStatusDescription);
+                Assert.True(recvRet.EndOfMessage);
+                Assert.Null(recvRet.CloseStatus);
+                Assert.Null(recvRet.CloseStatusDescription);
 
                 var recvSegment = new ArraySegment<byte>(receiveSegment.Array, receiveSegment.Offset, recvRet.Count);
                 Assert.Equal(message, WebSocketData.GetTextFromBuffer(recvSegment));
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)
         {
@@ -341,7 +341,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_Concurrent_Success(Uri server)
         {
@@ -370,7 +370,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalFact(nameof(WebSocketsSupported))]
         public async Task SendReceive_ConnectionClosedPrematurely_ReceiveAsyncFailsAndWebSocketStateUpdated()
         {
@@ -384,7 +384,7 @@ namespace System.Net.WebSockets.Client.Tests
                 Task acceptTask = server.AcceptConnectionAsync(async connection =>
                 {
                     // Complete the WebSocket upgrade. After this is done, the client-side ConnectAsync should complete.
-                    Assert.True(await LoopbackHelper.WebSocketHandshakeAsync(connection));
+                    Assert.NotNull(await LoopbackHelper.WebSocketHandshakeAsync(connection));
 
                     // Wait for client-side ConnectAsync to complete and for a pending ReceiveAsync to be posted.
                     await pendingReceiveAsyncPosted.Task.TimeoutAfter(TimeOutMilliseconds);
@@ -421,7 +421,7 @@ namespace System.Net.WebSockets.Client.Tests
 
                 WebSocketException newReceiveException =
                         await Assert.ThrowsAsync<WebSocketException>(() => ReceiveAsync(clientSocket, recvSegment, cts.Token));
-                
+
                 Assert.Equal(
                     ResourceHelper.GetExceptionMessage("net_WebSockets_InvalidState", "Aborted", "Open, CloseSent"),
                     newReceiveException.Message);
@@ -439,7 +439,7 @@ namespace System.Net.WebSockets.Client.Tests
             }, options);
         }
 
-        [OuterLoop] // TODO: Issue #11345
+        [OuterLoop("Uses external servers")]
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task ZeroByteReceive_CompletesWhenDataAvailable(Uri server)
         {

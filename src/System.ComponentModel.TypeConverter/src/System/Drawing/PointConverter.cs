@@ -33,7 +33,7 @@ namespace System.Drawing
                 {
                     return null;
                 }
-                
+
                 // Parse 2 integer values.
                 if (culture == null)
                 {
@@ -117,7 +117,7 @@ namespace System.Drawing
 
             if (x == null || y == null || !(x is int) || !(y is int))
             {
-                throw new ArgumentException(SR.Format(SR.PropertyValueInvalidEntry));
+                throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }
 
             return new Point((int)x, (int)y);

@@ -15,6 +15,8 @@ namespace System.Net.NetworkInformation
 {
     public partial class Ping
     {
+        private const int MaxUdpPacket = 0xFFFF + 256; // Marshal.SizeOf(typeof(Icmp6EchoReply)) * 2 + ip header info;
+
         private static readonly SafeWaitHandle s_nullSafeWaitHandle = new SafeWaitHandle(IntPtr.Zero, true);
         private static readonly object s_socketInitializationLock = new object();
         private static bool s_socketInitialized;
@@ -31,14 +33,14 @@ namespace System.Net.NetworkInformation
 
         private PingReply SendPingCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            // Since isAsync == false, DoSendPingCore will execute synchronously and return a completed 
+            // Since isAsync == false, DoSendPingCore will execute synchronously and return a completed
             // Task - so no blocking here
-            return DoSendPingCore(address, buffer, timeout, options, isAsync: false).Result;
+            return DoSendPingCore(address, buffer, timeout, options, isAsync: false).GetAwaiter().GetResult();
         }
 
         private Task<PingReply> SendPingAsyncCore(IPAddress address, byte[] buffer, int timeout, PingOptions options)
         {
-            // Since isAsync == true, DoSendPingCore will execute asynchronously and return an active Task 
+            // Since isAsync == true, DoSendPingCore will execute asynchronously and return an active Task
             return DoSendPingCore(address, buffer, timeout, options, isAsync: true);
         }
 
@@ -77,7 +79,7 @@ namespace System.Net.NetworkInformation
             }
             catch
             {
-                Cleanup(isAsync, isComplete: false);
+                Cleanup(isAsync);
                 throw;
             }
 
@@ -88,15 +90,17 @@ namespace System.Net.NetworkInformation
                 // Only skip Async IO Pending error value.
                 if (!isAsync || error != Interop.IpHlpApi.ERROR_IO_PENDING)
                 {
-                    Cleanup(isAsync, isComplete: false);
-                    throw new Win32Exception(error);
+                    Cleanup(isAsync);
+
+                    IPStatus status = GetStatusFromCode(error);
+                    return Task.FromResult(new PingReply(address, default, status, default, Array.Empty<byte>()));
                 }
             }
 
             if (isAsync)
                 return tcs.Task;
 
-            Cleanup(isAsync: false, isComplete: true);
+            Cleanup(isAsync);
             return Task.FromResult(CreatePingReply());
         }
 
@@ -215,7 +219,7 @@ namespace System.Net.NetworkInformation
             return CreatePingReplyFromIcmpEchoReply(icmpReply);
         }
 
-        private void Cleanup(bool isAsync, bool isComplete)
+        private void Cleanup(bool isAsync)
         {
             FreeUnmanagedStructures();
 
@@ -223,13 +227,8 @@ namespace System.Net.NetworkInformation
             {
                 UnregisterWaitHandle();
             }
-
-            if (isComplete)
-            {
-                Finish();
-            }
         }
-        
+
         partial void InternalDisposeCore()
         {
             if (_handlePingV4 != null)
@@ -285,7 +284,7 @@ namespace System.Net.NetworkInformation
             }
             finally
             {
-                Cleanup(isAsync: true, isComplete: true);
+                Cleanup(isAsync: true);
             }
 
             // Once we've called Finish, complete the task
@@ -325,12 +324,25 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        private static IPStatus GetStatusFromCode(int statusCode)
+        {
+            // Caveat lector: IcmpSendEcho2 doesn't allow us to know for sure if an error code
+            // is an IP Status code or a general win32 error code. This assumes everything under
+            // the base is a win32 error, and everything beyond is an IPStatus.
+            if (statusCode != 0 && statusCode < Interop.IpHlpApi.IP_STATUS_BASE)
+            {
+                throw new Win32Exception(statusCode);
+            }
+
+            return (IPStatus)statusCode;
+        }
+
         private static PingReply CreatePingReplyFromIcmpEchoReply(Interop.IpHlpApi.IcmpEchoReply reply)
         {
             const int DontFragmentFlag = 2;
 
             IPAddress address = new IPAddress(reply.address);
-            IPStatus ipStatus = (IPStatus)reply.status; // The icmpsendecho IP status codes.
+            IPStatus ipStatus = GetStatusFromCode((int)reply.status);
 
             long rtt;
             PingOptions options;
@@ -357,7 +369,7 @@ namespace System.Net.NetworkInformation
         private static PingReply CreatePingReplyFromIcmp6EchoReply(Interop.IpHlpApi.Icmp6EchoReply reply, IntPtr dataPtr, int sendSize)
         {
             IPAddress address = new IPAddress(reply.Address.Address, reply.Address.ScopeID);
-            IPStatus ipStatus = (IPStatus)reply.Status; // The icmpsendecho IP status codes.
+            IPStatus ipStatus = GetStatusFromCode((int)reply.Status);
 
             long rtt;
             byte[] buffer;
@@ -386,7 +398,7 @@ namespace System.Net.NetworkInformation
                 {
                     if (!s_socketInitialized)
                     {
-                        // Ensure that WSAStartup has been called once per process.  
+                        // Ensure that WSAStartup has been called once per process.
                         // The System.Net.NameResolution contract is responsible with the initialization.
                         Dns.GetHostName();
 

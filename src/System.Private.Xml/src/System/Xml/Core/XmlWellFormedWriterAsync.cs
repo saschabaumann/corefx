@@ -210,7 +210,7 @@ namespace System.Xml
         {
             try
             {
-                // lookup prefix / namespace  
+                // lookup prefix / namespace
                 if (prefix == null)
                 {
                     if (ns != null)
@@ -292,7 +292,7 @@ namespace System.Xml
                 if (top == _elemScopeStack.Length)
                 {
                     ElementScope[] newStack = new ElementScope[top * 2];
-                    Array.Copy(_elemScopeStack, newStack, top);
+                    Array.Copy(_elemScopeStack, 0, newStack, 0, top);
                     _elemScopeStack = newStack;
                 }
                 _elemScopeStack[top].Set(prefix, localName, ns, _nsTop);
@@ -489,7 +489,7 @@ namespace System.Xml
         {
             try
             {
-                // lookup prefix / namespace  
+                // lookup prefix / namespace
                 if (prefix == null)
                 {
                     if (namespaceName != null)
@@ -1433,7 +1433,7 @@ namespace System.Xml
 
 
                     default:
-                        Debug.Assert(false, "We should not get to this point.");
+                        Debug.Fail("We should not get to this point.");
                         break;
                 }
             }
@@ -1474,4 +1474,3 @@ namespace System.Xml
         }
     }
 }
-

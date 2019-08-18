@@ -1,8 +1,5 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project InitialTargets="AddSkipGetTargetFrameworkToProjectReferences">
   <PropertyGroup>
-    <ErrorIfBuildToolsRestoredFromIndividualProject Condition="!Exists('$(ToolsDir)')">true</ErrorIfBuildToolsRestoredFromIndividualProject>
-
     <!-- Reset these properties back to blank, since they are defaulted by Microsoft.NET.Sdk -->
     <FileAlignment Condition="'$(FileAlignment)' == '512'"></FileAlignment>
     <ErrorReport Condition="'$(ErrorReport)' == 'prompt'"></ErrorReport>
@@ -19,6 +16,24 @@
     </ItemGroup>
   </Target>
 
+  <!-- Used for packaging -->
+  <Target Name="IsNotNetCoreAppProject" Returns="@(IsNotNetCoreAppProjectResult)">
+    <ItemGroup>
+      <IsNotNetCoreAppProjectResult Condition="'$(IsNetCoreApp)' != 'true'" Include="$(MSBuildProjectName)" Version="$(PackageVersion)" />
+    </ItemGroup>
+  </Target>
+
+  <!-- Routing dotnet test to a test project's BuildAndTest target. -->
+  <Target Name="VSTest"
+          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true'"
+          DependsOnTargets="BuildAndTest" />
+
+  <Target Name="ValidateTestProjectConfigurations"
+          BeforeTargets="CoreCompile"
+          Condition="'$(IsTestProject)' == 'true' and '$(IsTestSupportProject)' != 'true' and '$(TargetsNetStandard)' == 'true'">
+    <Error Text="Targeting .NET Standard in a test project isn't supported." />
+  </Target>
+
   <PropertyGroup>
     <!--
     Hack workaround to skip the GenerateCompiledExpressionsTempFile target in
@@ -26,19 +41,6 @@
     -->
     <GenerateCompiledExpressionsTempFilePathForEditing></GenerateCompiledExpressionsTempFilePathForEditing>
   </PropertyGroup>
-
-  <!--
-  Hack workaround for not restoring each project. Instead, we turn off all the targets
-  that require a `project.assets.json`, since ours will be empty anyway.
-  -->
-  <Target Name="_ClearResolvePackageAssets"
-          BeforeTargets="AssignProjectConfiguration">
-
-    <PropertyGroup>
-      <ResolvePackageDependenciesForBuildDependsOn></ResolvePackageDependenciesForBuildDependsOn>
-    </PropertyGroup>
-
-  </Target>
 
   <!-- Returns the assembly version of the project for consumption
        by the NuGet package generation -->
@@ -49,9 +51,5 @@
        by the NuGet package generation -->
   <Target Name="GetDocumentationFile"
           Returns="$(DocumentationFile)"/>
-
-  <Target Name="DumpTargets" BeforeTargets="ResolveProjectReferences">
-    <Message Text="DumpTargets> $(OutputPath), C=[$(Configuration)], CG=[$(ConfigurationGroup)], OG=[$(OSGroup)], TG=[$(TargetGroup)]" Importance="Low" />
-  </Target>
 
 </Project>

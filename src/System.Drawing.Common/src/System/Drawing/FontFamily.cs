@@ -18,15 +18,14 @@ namespace System.Drawing
     {
         private const int NeutralLanguage = 0;
         private IntPtr _nativeFamily;
-        private bool _createDefaultOnFail;
+        private readonly bool _createDefaultOnFail;
 
 #if DEBUG
-        private static object s_lockObj = new object();
+        private static readonly object s_lockObj = new object();
         private static int s_idCount = 0;
         private int _id;
 #endif
 
-        [SuppressMessage("Microsoft.Security", "CA2106:SecureAsserts")]
         private void SetNativeFamily(IntPtr family)
         {
             Debug.Assert(_nativeFamily == IntPtr.Zero, "Setting GDI+ native font family when already initialized.");
@@ -66,7 +65,7 @@ namespace System.Drawing
         /// </summary>
         public FontFamily(string name, FontCollection fontCollection) => CreateFontFamily(name, fontCollection);
 
-        // Creates the native font family object.  
+        // Creates the native font family object.
         // Note: GDI+ creates singleton font family objects (from the corresponding font file) and reference count them.
         private void CreateFontFamily(string name, FontCollection fontCollection)
         {
@@ -160,7 +159,7 @@ namespace System.Drawing
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeleteFontFamily(new HandleRef(this, _nativeFamily));
 #if DEBUG
@@ -226,6 +225,7 @@ namespace System.Drawing
         /// <summary>
         /// Returns an array that contains all of the <see cref='FontFamily'/> objects associated with the specified
         /// graphics context.
+        /// </summary>
         [Obsolete("Do not use method GetFamilies, use property Families instead")]
         public static FontFamily[] GetFamilies(Graphics graphics)
         {

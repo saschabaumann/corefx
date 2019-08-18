@@ -20,9 +20,8 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private const string InstanceName = "InstanceName";
         private const int ConnectionTimeout = 15;
         private const int CompareMargin = 2;
-        private static bool AreConnectionStringsSetup() => DataTestUtility.AreConnStringsSetup();
 
-        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [ConditionalTheory(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         [InlineData("Azure with Default Policy must Disable blocking (*.database.windows.net)", new object[] { AzureEndpointSample })]
         [InlineData("Azure with Default Policy must Disable blocking (*.database.chinacloudapi.cn)", new object[] { AzureChinaEnpointSample })]
         [InlineData("Azure with Default Policy must Disable blocking (*.database.usgovcloudapi.net)", new object[] { AzureUSGovernmentEndpointSample })]
@@ -35,6 +34,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [InlineData("Azure with Never Policy must Disable Blocking", new object[] { AzureEndpointSample, PoolBlockingPeriod.NeverBlock })]
         public void TestAzureBlockingPeriod(string description, object[] Params)
         {
+            _ = description;
             string serverName = Params[0] as string;
             PoolBlockingPeriod? policy = null;
             if (Params.Length > 1)
@@ -46,7 +46,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodAzureTest(connString, policy);
         }
 
-        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [ConditionalTheory(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         [InlineData("NonAzure with Default Policy must Enable blocking", new object[] { NonExistentServer })]
         [InlineData("NonAzure with Auto Policy must Enable Blocking", new object[] { NonExistentServer, PoolBlockingPeriod.Auto })]
         [InlineData("NonAzure with Always Policy must Enable Blocking", new object[] { NonExistentServer, PoolBlockingPeriod.AlwaysBlock })]
@@ -55,6 +55,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [InlineData("NonAzure (which contains azure endpoint - nonexistent.database.windows.net.else) with Default Policy must Enable Blocking", new object[] { "nonexistent.database.windows.net.else" })]
         public void TestNonAzureBlockingPeriod(string description, object[] Params)
         {
+            _ = description;
             string serverName = Params[0] as string;
             PoolBlockingPeriod? policy = null;
 
@@ -67,7 +68,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodNonAzureTest(connString, policy);
         }
 
-        [ConditionalTheory(nameof(AreConnectionStringsSetup))]
+        [ConditionalTheory(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup), /* [ActiveIssue(33930)] */ nameof(DataTestUtility.IsUsingNativeSNI))]
         [InlineData("Test policy with Auto (lowercase)", "auto")]
         [InlineData("Test policy with Auto (PascalCase)", "Auto")]
         [InlineData("Test policy with Always (lowercase)", "alwaysblock")]
@@ -76,6 +77,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         [InlineData("Test policy with Never (PascalCase)", "NeverBlock")]
         public void TestSetPolicyWithVariations(string description, string policyString)
         {
+            _ = description;
             PoolBlockingPeriod? policy = null;
             if (policyString.ToLower().Contains("auto"))
             {
@@ -93,7 +95,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             PoolBlockingPeriodAzureTest(connString, policy);
         }
 
-        public void PoolBlockingPeriodNonAzureTest(string connStr, PoolBlockingPeriod? policy)
+        private void PoolBlockingPeriodNonAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
             int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
@@ -109,7 +111,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        public void PoolBlockingPeriodAzureTest(string connStr, PoolBlockingPeriod? policy)
+        private void PoolBlockingPeriodAzureTest(string connStr, PoolBlockingPeriod? policy)
         {
             int firstErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);
             int secondErrorTimeInSecs = GetConnectionOpenTimeInSeconds(connStr);

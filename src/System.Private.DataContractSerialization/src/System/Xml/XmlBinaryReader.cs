@@ -43,11 +43,11 @@ namespace System.Xml
             if (buffer == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > buffer.Length)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, buffer.Length)));
             if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
             if (count > buffer.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, buffer.Length - offset)));
             MoveToInitial(quotas, session, null);
@@ -885,9 +885,9 @@ namespace System.Xml
                 int actual = Math.Max(maxLength - maxTextNodeLength, 0);
                 int offset = BufferReader.ReadBytes(actual);
 
-                // We need to make sure we don't split a utf8  character, so scan backwards for a 
-                // character boundary.  We'll actually always push off at least one character since 
-                // although we find the character boundary, we don't bother to figure out if we have 
+                // We need to make sure we don't split a utf8  character, so scan backwards for a
+                // character boundary.  We'll actually always push off at least one character since
+                // although we find the character boundary, we don't bother to figure out if we have
                 // all the bytes that comprise the character.
                 int i;
                 for (i = offset + actual - 1; i >= offset; i--)
@@ -1219,11 +1219,11 @@ namespace System.Xml
             if (array == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.Format(SR.OffsetExceedsBufferSize, array.Length)));
             if (count < 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.ValueMustBeNonNegative)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.ValueMustBeNonNegative));
             if (count > array.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
         }

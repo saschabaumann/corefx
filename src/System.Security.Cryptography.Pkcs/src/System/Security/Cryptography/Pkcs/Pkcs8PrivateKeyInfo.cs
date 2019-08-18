@@ -25,6 +25,14 @@ namespace System.Security.Cryptography.Pkcs
             if (algorithmId == null)
                 throw new ArgumentNullException(nameof(algorithmId));
 
+            if (algorithmParameters?.Length > 0)
+            {
+                // Read to ensure that there is precisely one legally encoded value.
+                AsnReader reader = new AsnReader(algorithmParameters.Value, AsnEncodingRules.BER);
+                reader.ReadEncodedValue();
+                reader.ThrowIfNotEmpty();
+            }
+
             AlgorithmId = algorithmId;
             AlgorithmParameters = skipCopies ? algorithmParameters : algorithmParameters?.ToArray();
             PrivateKeyBytes = skipCopies ? privateKey : privateKey.ToArray();
@@ -63,7 +71,7 @@ namespace System.Security.Cryptography.Pkcs
 
             if (!skipCopy)
             {
-                reader = new AsnReader(reader.GetEncodedValue().ToArray(), AsnEncodingRules.BER);
+                reader = new AsnReader(reader.ReadEncodedValue().ToArray(), AsnEncodingRules.BER);
             }
 
             int localRead = reader.PeekEncodedValue().Length;
@@ -197,7 +205,7 @@ namespace System.Security.Cryptography.Pkcs
             finally
             {
                 CryptographicOperations.ZeroMemory(decryptedMemory.Span);
-                ArrayPool<byte>.Shared.Return(decrypted.Array);
+                CryptoPool.Return(decrypted.Array, clearSize: 0);
             }
         }
 
@@ -229,7 +237,7 @@ namespace System.Security.Cryptography.Pkcs
             finally
             {
                 CryptographicOperations.ZeroMemory(decryptedMemory.Span);
-                ArrayPool<byte>.Shared.Return(decrypted.Array);
+                CryptoPool.Return(decrypted.Array, clearSize: 0);
             }
         }
 

@@ -91,9 +91,9 @@ namespace Internal.Cryptography.Pal.Windows
 
         /// <summary>
         /// Returns the inner content of the CMS.
-        /// 
+        ///
         /// Special case: If the CMS is an enveloped CMS that has been decrypted and the inner content type is Oids.Pkcs7Data, the returned
-        /// content bytes are the decoded octet bytes, rather than the encoding of those bytes. This is a documented convenience behavior of 
+        /// content bytes are the decoded octet bytes, rather than the encoding of those bytes. This is a documented convenience behavior of
         /// CryptMsgGetParam(CMSG_CONTENT_PARAM) that apparently got baked into the behavior of the managed EnvelopedCms class.
         /// </summary>
         public static ContentInfo GetContentInfo(this SafeCryptMsgHandle hCryptMsg)
@@ -168,8 +168,32 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 case CertIdChoice.CERT_ID_ISSUER_SERIAL_NUMBER:
                     {
-                        const CertNameStrTypeAndFlags dwStrType = CertNameStrTypeAndFlags.CERT_X500_NAME_STR | CertNameStrTypeAndFlags.CERT_NAME_STR_REVERSE_FLAG;
-                        string issuer = Interop.Crypt32.CertNameToStr(ref certId.u.IssuerSerialNumber.Issuer, dwStrType);
+                        const int dwStrType = (int)(CertNameStrTypeAndFlags.CERT_X500_NAME_STR | CertNameStrTypeAndFlags.CERT_NAME_STR_REVERSE_FLAG);
+
+                        string issuer;
+                        unsafe
+                        {
+                            DATA_BLOB* dataBlobPtr = &certId.u.IssuerSerialNumber.Issuer;
+
+                            int nc = Interop.Crypt32.CertNameToStr((int)MsgEncodingType.All, dataBlobPtr, dwStrType, null, 0);
+                            if (nc <= 1) // The API actually return 1 when it fails; which is not what the documentation says.
+                            {
+                                throw Marshal.GetLastWin32Error().ToCryptographicException();
+                            }
+
+                            Span<char> name = nc <= 128 ? stackalloc char[128] : new char[nc];
+                            fixed (char* namePtr = name)
+                            {
+                                nc = Interop.Crypt32.CertNameToStr((int)MsgEncodingType.All, dataBlobPtr, dwStrType, namePtr, nc);
+                                if (nc <= 1) // The API actually return 1 when it fails; which is not what the documentation says.
+                                {
+                                    throw Marshal.GetLastWin32Error().ToCryptographicException();
+                                }
+
+                                issuer = new string(namePtr);
+                            }
+                        }
+
                         byte[] serial = certId.u.IssuerSerialNumber.SerialNumber.ToByteArray();
                         X509IssuerSerial issuerSerial = new X509IssuerSerial(issuer, serial.ToSerialString());
                         return new SubjectIdentifier(SubjectIdentifierType.IssuerAndSerialNumber, issuerSerial);
@@ -203,7 +227,7 @@ namespace Internal.Cryptography.Pal.Windows
                     return new SubjectIdentifierOrKey(SubjectIdentifierOrKeyType.SubjectKeyIdentifier, subjectIdentifier.Value);
 
                 default:
-                    Debug.Assert(false);  // Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.
+                    Debug.Fail("Only the framework can construct SubjectIdentifier's so if we got a bad value here, that's our fault.");
                     throw new CryptographicException(SR.Format(SR.Cryptography_Cms_Invalid_Subject_Identifier_Type, subjectIdentifierType));
             }
         }
@@ -243,24 +267,14 @@ namespace Internal.Cryptography.Pal.Windows
                                     throw Marshal.GetLastWin32Error().ToCryptographicException();
                             }
 
-                            switch (rc2Parameters.dwVersion)
+                            keyLength = rc2Parameters.dwVersion switch
                             {
-                                case CryptRc2Version.CRYPT_RC2_40BIT_VERSION:
-                                    keyLength = KeyLengths.Rc2_40Bit;
-                                    break;
-                                case CryptRc2Version.CRYPT_RC2_56BIT_VERSION:
-                                    keyLength = KeyLengths.Rc2_56Bit;
-                                    break;
-                                case CryptRc2Version.CRYPT_RC2_64BIT_VERSION:
-                                    keyLength = KeyLengths.Rc2_64Bit;
-                                    break;
-                                case CryptRc2Version.CRYPT_RC2_128BIT_VERSION:
-                                    keyLength = KeyLengths.Rc2_128Bit;
-                                    break;
-                                default:
-                                    keyLength = 0;
-                                    break;
-                            }
+                                CryptRc2Version.CRYPT_RC2_40BIT_VERSION => KeyLengths.Rc2_40Bit,
+                                CryptRc2Version.CRYPT_RC2_56BIT_VERSION => KeyLengths.Rc2_56Bit,
+                                CryptRc2Version.CRYPT_RC2_64BIT_VERSION => KeyLengths.Rc2_64Bit,
+                                CryptRc2Version.CRYPT_RC2_128BIT_VERSION => KeyLengths.Rc2_128Bit,
+                                _ => 0,
+                            };
                         }
                         break;
                     }
@@ -303,6 +317,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
 
             AlgorithmIdentifier algorithmIdentifier = new AlgorithmIdentifier(Oid.FromOidValue(oidValue, OidGroup.All), keyLength);
+            switch (oidValue)
+            {
+                case Oids.RsaOaep:
+                    algorithmIdentifier.Parameters = cryptAlgorithmIdentifer.Parameters.ToByteArray();
+                    break;
+            }
             return algorithmIdentifier;
         }
 
@@ -390,8 +410,7 @@ namespace Internal.Cryptography.Pal.Windows
 
             if (rented != null)
             {
-                Array.Clear(rented, 0, maxClear);
-                ArrayPool<byte>.Shared.Return(rented);
+                CryptoPool.Return(rented, maxClear);
             }
 
             return new CspParameters(provType)
@@ -415,15 +434,12 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 if (len > buf.Length)
                 {
-                    ArrayPool<byte> pool = ArrayPool<byte>.Shared;
-
                     if (rented != null)
                     {
-                        Array.Clear(rented, 0, clearLen);
-                        pool.Return(rented);
+                        CryptoPool.Return(rented, clearLen);
                     }
 
-                    rented = pool.Rent(len);
+                    rented = CryptoPool.Rent(len);
                     buf = rented;
                     len = rented.Length;
                 }
@@ -475,4 +491,3 @@ namespace Internal.Cryptography.Pal.Windows
         }
     }
 }
-

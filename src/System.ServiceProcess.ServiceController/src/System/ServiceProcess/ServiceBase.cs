@@ -238,9 +238,9 @@ namespace System.ServiceProcess
         /// can be used to write notification of service command calls, such as Start and Stop, to the Application event log. This property is read-only.
         /// </devdoc>
         [Browsable (false), DesignerSerializationVisibility (DesignerSerializationVisibility.Hidden)]
-        public virtual EventLog EventLog 
+        public virtual EventLog EventLog
         {
-            get 
+            get
             {
                 if (_eventLog == null)
                 {
@@ -416,7 +416,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_PAUSED;
-                    WriteLogEntry(SR.Format(SR.ContinueFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.ContinueFailed, e), true);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -438,7 +438,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.CommandFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.CommandFailed, e), true);
 
                 // We should re-throw the exception so that the advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -459,7 +459,7 @@ namespace System.ServiceProcess
                 catch (Exception e)
                 {
                     _status.currentState = ServiceControlStatus.STATE_RUNNING;
-                    WriteLogEntry(SR.Format(SR.PauseFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.PauseFailed, e), true);
 
                     // We re-throw the exception so that the advapi32 code can report
                     // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -487,7 +487,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.PowerEventFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.PowerEventFailed, e), true);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -503,7 +503,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.SessionChangeFailed, e), true);
 
                 // We rethrow the exception so that advapi32 code can report
                 // ERROR_EXCEPTION_IN_SERVICE as it would for native services.
@@ -535,7 +535,7 @@ namespace System.ServiceProcess
                 {
                     _status.currentState = previousState;
                     SetServiceStatus(_statusHandle, pStatus);
-                    WriteLogEntry(SR.Format(SR.StopFailed, e.ToString()), true);
+                    WriteLogEntry(SR.Format(SR.StopFailed, e), true);
                     throw;
                 }
             }
@@ -546,7 +546,7 @@ namespace System.ServiceProcess
             try
             {
                 OnShutdown();
-                WriteLogEntry(SR.Format(SR.ShutdownOK));
+                WriteLogEntry(SR.ShutdownOK);
 
                 if (_status.currentState == ServiceControlStatus.STATE_PAUSED || _status.currentState == ServiceControlStatus.STATE_RUNNING)
                 {
@@ -561,7 +561,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.ShutdownFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.ShutdownFailed, e), true);
                 throw;
             }
         }
@@ -599,7 +599,7 @@ namespace System.ServiceProcess
             if (services == null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
-            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();            
+            int sizeOfSERVICE_TABLE_ENTRY = Marshal.SizeOf<SERVICE_TABLE_ENTRY>();
 
             IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeOfSERVICE_TABLE_ENTRY));
             try
@@ -851,7 +851,7 @@ namespace System.ServiceProcess
             }
             catch (Exception e)
             {
-                WriteLogEntry(SR.Format(SR.StartFailed, e.ToString()), true);
+                WriteLogEntry(SR.Format(SR.StartFailed, e), true);
                 _status.currentState = ServiceControlStatus.STATE_STOPPED;
 
                 // We capture the exception so that it can be propagated
@@ -957,17 +957,17 @@ namespace System.ServiceProcess
         private void WriteLogEntry(string message, bool error = false)
         {
             // EventLog failures shouldn't affect the service operation
-            try 
+            try
             {
                 if (AutoLog)
                 {
-                    EventLog.WriteEntry(message); 
+                    EventLog.WriteEntry(message);
                 }
             }
-            catch  
+            catch
             {
                 // Do nothing.  Not having the event log is bad, but not starting the service as a result is worse.
-            }        
+            }
         }
     }
 }

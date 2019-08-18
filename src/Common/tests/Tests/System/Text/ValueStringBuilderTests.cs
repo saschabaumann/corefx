@@ -273,9 +273,46 @@ namespace System.Text.Tests
 
             vsb.Append(Text1);
 
-            Assert.Equal(vsb[3], 'b');
+            Assert.Equal('b', vsb[3]);
             vsb[3] = 'c';
-            Assert.Equal(vsb[3], 'c');
+            Assert.Equal('c', vsb[3]);
+        }
+
+        [Fact]
+        public void EnsureCapacity_IfRequestedCapacityWins()
+        {
+            // Note: constants used here may be dependent on minimal buffer size
+            // the ArrayPool is able to return.
+            Span<char> initialBuffer = stackalloc char[32];
+            var builder = new ValueStringBuilder(initialBuffer);
+
+            builder.EnsureCapacity(65);
+
+            Assert.Equal(128, builder.Capacity);
+        }
+
+        [Fact]
+        public void EnsureCapacity_IfBufferTimesTwoWins()
+        {
+            Span<char> initialBuffer = stackalloc char[32];
+            var builder = new ValueStringBuilder(initialBuffer);
+
+            builder.EnsureCapacity(33);
+
+            Assert.Equal(64, builder.Capacity);
+        }
+
+        [Fact]
+        public void EnsureCapacity_NoAllocIfNotNeeded()
+        {
+            // Note: constants used here may be dependent on minimal buffer size
+            // the ArrayPool is able to return.
+            Span<char> initialBuffer = stackalloc char[64];
+            var builder = new ValueStringBuilder(initialBuffer);
+
+            builder.EnsureCapacity(16);
+
+            Assert.Equal(64, builder.Capacity);
         }
     }
 }

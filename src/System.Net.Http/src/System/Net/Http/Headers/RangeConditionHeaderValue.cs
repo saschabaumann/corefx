@@ -145,7 +145,7 @@ namespace System.Net.Http.Headers
 
                 current = current + entityTagLength;
 
-                // RangeConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after an 
+                // RangeConditionHeaderValue only allows 1 value. There must be no delimiter/other chars after an
                 // entity tag.
                 if (current != input.Length)
                 {
@@ -154,7 +154,7 @@ namespace System.Net.Http.Headers
             }
             else
             {
-                if (!HttpDateParser.TryStringToDate(input.Substring(current), out date))
+                if (!HttpDateParser.TryStringToDate(input.AsSpan(current), out date))
                 {
                     return 0;
                 }

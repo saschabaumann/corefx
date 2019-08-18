@@ -15,6 +15,11 @@ namespace System.ComponentModel
         /// </summary>
         public ProvidePropertyAttribute(string propertyName, Type receiverType)
         {
+            if (receiverType == null)
+            {
+                throw new ArgumentNullException(nameof(receiverType));
+            }
+
             PropertyName = propertyName;
             ReceiverTypeName = receiverType.AssemblyQualifiedName;
         }
@@ -50,7 +55,7 @@ namespace System.ComponentModel
                 && other.ReceiverTypeName == ReceiverTypeName;
         }
 
-        public override int GetHashCode() => PropertyName.GetHashCode() ^ ReceiverTypeName.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(PropertyName, ReceiverTypeName);
 
         public override object TypeId => GetType().FullName + PropertyName;
     }

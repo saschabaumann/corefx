@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
             if (keyBlob == null)
                 throw new ArgumentNullException(nameof(keyBlob));
 
-            return Import(keyBlob.AsSpan(), curveName, format, provider);
+            return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
 
         internal static CngKey Import(
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle keyHandle = null;
             ErrorCode errorCode;
-            
+
             if (curveName == null)
             {
                 errorCode = Interop.NCrypt.NCryptImportKey(

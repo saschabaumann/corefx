@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -20,7 +20,7 @@ namespace System.Xml.Serialization
         private static TypeDesc StringTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(string));
         private static TypeDesc QnameTypeDesc { get; set; } = (new TypeScope()).GetTypeDesc(typeof(XmlQualifiedName));
 
-        private XmlMapping _mapping;
+        private readonly XmlMapping _mapping;
 
         public ReflectionXmlSerializationReader(XmlMapping mapping, XmlReader xmlReader, XmlDeserializationEvents events, string encodingStyle)
         {
@@ -138,7 +138,6 @@ namespace System.Xml.Serialization
             var textOrArrayMembersList = new List<Member>();
             var attributeMembersList = new List<Member>();
 
-            int pLength = p.Length;
             for (int i = 0; i < mappings.Length; i++)
             {
                 int index = i;
@@ -226,7 +225,7 @@ namespace System.Xml.Serialization
                 {
                     membersList.Add(anyMember);
                 }
-                else if (mapping.TypeDesc.IsArrayLike 
+                else if (mapping.TypeDesc.IsArrayLike
                     && !(mapping.Elements.Length == 1 && mapping.Elements[0].Mapping is ArrayMapping))
                 {
                     anyMember.Collection = new CollectionMember();
@@ -462,7 +461,7 @@ namespace System.Xml.Serialization
             var memberMapping = new MemberMapping();
             memberMapping.TypeDesc = mapping.TypeDesc;
             memberMapping.Elements = new ElementAccessor[] { element };
-                       
+
             object o = null;
             var holder = new ObjectHolder();
             var member = new Member(memberMapping);
@@ -592,7 +591,7 @@ namespace System.Xml.Serialization
                 MethodInfo addMethod = targetCollectionType.GetMethod("Add");
                 if (addMethod == null)
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
                 object[] arguments = new object[1];
@@ -604,7 +603,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private static ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
+        private static readonly ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate> s_setMemberValueDelegateCache = new ConcurrentDictionary<Tuple<Type, string>, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>();
 
         private static ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate GetSetMemberValueDelegate(object o, string memberName)
         {
@@ -626,10 +625,9 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
-                var typeMemberTypeTuple = Tuple.Create(o.GetType(), memberType);
                 MethodInfo getSetMemberValueDelegateWithTypeGenericMi = typeof(ReflectionXmlSerializationReaderHelper).GetMethod("GetSetMemberValueDelegateWithType", BindingFlags.Static | BindingFlags.Public);
                 MethodInfo getSetMemberValueDelegateWithTypeMi = getSetMemberValueDelegateWithTypeGenericMi.MakeGenericMethod(o.GetType(), memberType);
                 var getSetMemberValueDelegateWithType = (Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>)getSetMemberValueDelegateWithTypeMi.CreateDelegate(typeof(Func<MemberInfo, ReflectionXmlSerializationReaderHelper.SetMemberValueDelegate>));
@@ -651,7 +649,7 @@ namespace System.Xml.Serialization
                 return fieldInfo.GetValue(o);
             }
 
-            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+            throw new InvalidOperationException(SR.XmlInternalError);
         }
 
         private bool WriteMemberText(Member anyText)
@@ -672,7 +670,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        throw new InvalidOperationException(SR.XmlInternalError);
                     }
                 }
                 else
@@ -710,8 +708,8 @@ namespace System.Xml.Serialization
 
         private bool IsSequence(Member[] members)
         {
-            // #10586: Currently the reflection based method treat this kind of type as normal types. 
-            // But potentially we can do some optimization for types that have ordered properties. 
+            // #10586: Currently the reflection based method treat this kind of type as normal types.
+            // But potentially we can do some optimization for types that have ordered properties.
             return false;
         }
 
@@ -851,10 +849,10 @@ namespace System.Xml.Serialization
                 {
                     Reader.Skip();
                 }
-                else if(element.Mapping.TypeDesc.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
-                {                   
+                else if (element.Mapping.TypeDesc.Type == typeof(TimeSpan) && Reader.IsEmptyElement)
+                {
                     Reader.Skip();
-                    value = default(TimeSpan);                   
+                    value = default(TimeSpan);
                 }
                 else
                 {
@@ -899,7 +897,7 @@ namespace System.Xml.Serialization
                     {
                         if (member == null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                            throw new InvalidOperationException(SR.XmlInternalError);
                         }
 
                         member.Source(value);
@@ -970,12 +968,12 @@ namespace System.Xml.Serialization
                         }
                         break;
                     default:
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        throw new InvalidOperationException(SR.XmlInternalError);
                 }
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
 
             member?.ChoiceSource?.Invoke(element.Name);
@@ -1035,7 +1033,7 @@ namespace System.Xml.Serialization
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
 
             return memberType;
@@ -1071,7 +1069,7 @@ namespace System.Xml.Serialization
                     {
                         WriteAddCollectionFixup(member.GetSource, member.Source, rre, td, readOnly);
 
-                        // member.Source has been set at this point. 
+                        // member.Source has been set at this point.
                         // Setting the source to no-op to avoid setting the
                         // source again.
                         member.Source = NoopAction;
@@ -1080,11 +1078,11 @@ namespace System.Xml.Serialization
                     {
                         if (member == null)
                         {
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                            throw new InvalidOperationException(SR.XmlInternalError);
                         }
 
                         member.Source(rre);
-                    }                    
+                    }
                 }
 
                 o = rre;
@@ -1165,58 +1163,25 @@ namespace System.Xml.Serialization
                 if (!mapping.TypeDesc.HasCustomFormatter)
                 {
                     string value = readFunc(funcState);
-                    object retObj;
-                    switch (mapping.TypeDesc.FormatterName)
+                    object retObj = mapping.TypeDesc.FormatterName switch
                     {
-                        case "Boolean":
-                            retObj = XmlConvert.ToBoolean(value);
-                            break;
-                        case "Int32":
-                            retObj = XmlConvert.ToInt32(value);
-                            break;
-                        case "Int16":
-                            retObj = XmlConvert.ToInt16(value);
-                            break;
-                        case "Int64":
-                            retObj = XmlConvert.ToInt64(value);
-                            break;
-                        case "Single":
-                            retObj = XmlConvert.ToSingle(value);
-                            break;
-                        case "Double":
-                            retObj = XmlConvert.ToDouble(value);
-                            break;
-                        case "Decimal":
-                            retObj = XmlConvert.ToDecimal(value);
-                            break;
-                        case "Byte":
-                            retObj = XmlConvert.ToByte(value);
-                            break;
-                        case "SByte":
-                            retObj = XmlConvert.ToSByte(value);
-                            break;
-                        case "UInt16":
-                            retObj = XmlConvert.ToUInt16(value);
-                            break;
-                        case "UInt32":
-                            retObj = XmlConvert.ToUInt32(value);
-                            break;
-                        case "UInt64":
-                            retObj = XmlConvert.ToUInt64(value);
-                            break;
-                        case "Guid":
-                            retObj = XmlConvert.ToGuid(value);
-                            break;
-                        case "Char":
-                            retObj = XmlConvert.ToChar(value);
-                            break;
-                        case "TimeSpan":
-                            retObj = XmlConvert.ToTimeSpan(value);
-                            break;
-                        default:
-                            throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}"));
-                    }
-
+                        "Boolean" => XmlConvert.ToBoolean(value),
+                        "Int32" => XmlConvert.ToInt32(value),
+                        "Int16" => XmlConvert.ToInt16(value),
+                        "Int64" => XmlConvert.ToInt64(value),
+                        "Single" => XmlConvert.ToSingle(value),
+                        "Double" => XmlConvert.ToDouble(value),
+                        "Decimal" => XmlConvert.ToDecimal(value),
+                        "Byte" => XmlConvert.ToByte(value),
+                        "SByte" => XmlConvert.ToSByte(value),
+                        "UInt16" => XmlConvert.ToUInt16(value),
+                        "UInt32" => XmlConvert.ToUInt32(value),
+                        "UInt64" => XmlConvert.ToUInt64(value),
+                        "Guid" => XmlConvert.ToGuid(value),
+                        "Char" => XmlConvert.ToChar(value),
+                        "TimeSpan" => XmlConvert.ToTimeSpan(value),
+                        _ => throw new InvalidOperationException(SR.Format(SR.XmlInternalErrorDetails, $"unknown FormatterName: {mapping.TypeDesc.FormatterName}")),
+                    };
                     return retObj;
                 }
                 else
@@ -1515,7 +1480,7 @@ namespace System.Xml.Serialization
                 }
                 else
                 {
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
                 }
 
                 AddObjectsIntoTargetCollection(collection, listOfItems, collectionType);
@@ -1959,7 +1924,7 @@ namespace System.Xml.Serialization
                     throw new NotImplementedException("special.TypeDesc.CanBeAttributeValue");
                 }
                 else
-                    throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                    throw new InvalidOperationException(SR.XmlInternalError);
             }
             else
             {
@@ -2087,8 +2052,7 @@ namespace System.Xml.Serialization
         }
     }
 
-    // This class and it's contained members must be public so that reflection metadata is available on uapaot
-    public static class ReflectionXmlSerializationReaderHelper
+    internal static class ReflectionXmlSerializationReaderHelper
     {
         public delegate void SetMemberValueDelegate(object o, object val);
 
@@ -2111,7 +2075,7 @@ namespace System.Xml.Serialization
                     };
                 }
 
-                throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                throw new InvalidOperationException(SR.XmlInternalError);
             }
             else
             {

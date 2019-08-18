@@ -76,13 +76,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 throw new ArgumentNullException(nameof(exports));
             }
 
-            if (exports.Length >= 2) 
+            if (exports.Length >= 2)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
             if (exports.Length == 0)
-            {   
+            {
                 return null;
             }
 
@@ -107,7 +107,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (!ContractServices.TryCast(type, value, out result))
             {
                 throw new ComposablePartException(
-                    string.Format(CultureInfo.CurrentCulture,
+                    SR.Format(
                         SR.ReflectionModel_ImportNotAssignableFromExport,
                         export.ToElement().DisplayName,
                         type.FullName),

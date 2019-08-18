@@ -15,12 +15,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             if (source is Iterator<TSource> iterator)
@@ -65,12 +65,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (selector == null)
             {
-                throw Error.ArgumentNull(nameof(selector));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.selector);
             }
 
             return SelectIterator(source, selector);
@@ -150,7 +150,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that maps each item of a <see cref="T:TSource[]"/>.
+        /// An iterator that maps each item of a array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>

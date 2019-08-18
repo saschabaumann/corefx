@@ -15,7 +15,7 @@ namespace System.ComponentModel
     public class ToolboxItemAttribute : Attribute
     {
         private Type _toolboxItemType;
-        private string _toolboxItemTypeName;
+        private readonly string _toolboxItemTypeName;
 
         /// <summary>
         /// Initializes a new instance of ToolboxItemAttribute and sets the type to
@@ -57,6 +57,11 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemAttribute(Type toolboxItemType)
         {
+            if (toolboxItemType == null)
+            {
+                throw new ArgumentNullException(nameof(toolboxItemType));
+            }
+
             _toolboxItemType = toolboxItemType;
             _toolboxItemTypeName = toolboxItemType.AssemblyQualifiedName;
         }

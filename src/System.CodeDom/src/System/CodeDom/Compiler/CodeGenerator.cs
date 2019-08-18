@@ -181,7 +181,7 @@ namespace System.CodeDom.Compiler
 
                 // Generate an extra new line at the end of the snippet.
                 // If the snippet is comment and this type only contains comments.
-                // The generated code will not compile. 
+                // The generated code will not compile.
                 Output.WriteLine();
             }
 
@@ -695,7 +695,7 @@ namespace System.CodeDom.Compiler
             }
             // Generate an extra new line at the end of the snippet.
             // If the snippet is comment and this type only contains comments.
-            // The generated code will not compile. 
+            // The generated code will not compile.
             if (hasSnippet)
             {
                 Output.WriteLine();
@@ -1391,7 +1391,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType().ToString()));
+                throw new ArgumentException(SR.Format(SR.InvalidPrimitiveType, e.Value.GetType()));
             }
         }
 

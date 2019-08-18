@@ -14,6 +14,11 @@ namespace System.Drawing
     /// <summary>
     /// Defines a particular format for text, including font face, size, and style attributes.
     /// </summary>
+#if netcoreapp
+    [TypeConverter("System.Drawing.FontConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#endif
+    [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
         private IntPtr _nativeFont;
@@ -113,7 +118,7 @@ namespace System.Drawing
         public string OriginalFontName => _originalFontName;
 
         /// <summary>
-        /// Gets the name of this <see cref='Drawing.SystemFont'/>.
+        /// Gets the name of this <see cref='Font'/>.
         /// </summary>
         [Browsable(false)]
         public string SystemFontName => _systemFontName;
@@ -140,6 +145,27 @@ namespace System.Drawing
         /// </summary>
         ~Font() => Dispose(false);
 
+        private Font(SerializationInfo info, StreamingContext context)
+        {
+            string name = info.GetString("Name"); // Do not rename (binary serialization)
+            FontStyle style = (FontStyle)info.GetValue("Style", typeof(FontStyle)); // Do not rename (binary serialization)
+            GraphicsUnit unit = (GraphicsUnit)info.GetValue("Unit", typeof(GraphicsUnit)); // Do not rename (binary serialization)
+            float size = info.GetSingle("Size"); // Do not rename (binary serialization)
+
+            Initialize(name, size, style, unit, SafeNativeMethods.DEFAULT_CHARSET, IsVerticalName(name));
+        }
+
+        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
+        {
+            string name = string.IsNullOrEmpty(OriginalFontName) ? Name : OriginalFontName;
+            si.AddValue("Name", name); // Do not rename (binary serialization)
+            si.AddValue("Size", Size); // Do not rename (binary serialization)
+            si.AddValue("Style", Style); // Do not rename (binary serialization)
+            si.AddValue("Unit", Unit); // Do not rename (binary serialization)
+        }
+
+        private static bool IsVerticalName(string familyName) => familyName?.Length > 0 && familyName[0] == '@';
+
         /// <summary>
         /// Cleans up Windows resources for this <see cref='Font'/>.
         /// </summary>
@@ -156,7 +182,7 @@ namespace System.Drawing
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeleteFont(new HandleRef(this, _nativeFont));
 #if DEBUG
@@ -208,7 +234,7 @@ namespace System.Drawing
             {
                 return true;
             }
-            
+
             if (!(obj is Font font))
             {
                 return false;
@@ -249,8 +275,69 @@ namespace System.Drawing
                                     _gdiCharSet,
                                     _gdiVerticalFont);
         }
-        
+
         // This is used by SystemFonts when constructing a system Font objects.
         internal void SetSystemFontName(string systemFontName) => _systemFontName = systemFontName;
+
+        public unsafe void ToLogFont(object logFont, Graphics graphics)
+        {
+            if (logFont == null)
+            {
+                throw new ArgumentNullException(nameof(logFont));
+            }
+
+            Type type = logFont.GetType();
+            int nativeSize = sizeof(SafeNativeMethods.LOGFONT);
+            if (Marshal.SizeOf(type) != nativeSize)
+            {
+                // If we don't actually have an object that is LOGFONT in size, trying to pass
+                // it to GDI+ is likely to cause an AV.
+                throw new ArgumentException();
+            }
+
+            SafeNativeMethods.LOGFONT nativeLogFont = ToLogFontInternal(graphics);
+
+            // PtrToStructure requires that the passed in object not be a value type.
+            if (!type.IsValueType)
+            {
+                Marshal.PtrToStructure(new IntPtr(&nativeLogFont), logFont);
+            }
+            else
+            {
+                GCHandle handle = GCHandle.Alloc(logFont, GCHandleType.Pinned);
+                Buffer.MemoryCopy(&nativeLogFont, (byte*)handle.AddrOfPinnedObject(), nativeSize, nativeSize);
+                handle.Free();
+            }
+        }
+
+        private unsafe SafeNativeMethods.LOGFONT ToLogFontInternal(Graphics graphics)
+        {
+            if (graphics == null)
+            {
+                throw new ArgumentNullException(nameof(graphics));
+            }
+
+            SafeNativeMethods.LOGFONT logFont = new SafeNativeMethods.LOGFONT();
+            Gdip.CheckStatus(Gdip.GdipGetLogFontW(
+                new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), ref logFont));
+
+            // Prefix the string with '@' if this is a gdiVerticalFont.
+            if (_gdiVerticalFont)
+            {
+                Span<char> faceName = logFont.lfFaceName;
+                faceName.Slice(0, faceName.Length - 1).CopyTo(faceName.Slice(1));
+                faceName[0] = '@';
+
+                // Docs require this to be null terminated
+                faceName[faceName.Length - 1] = '\0';
+            }
+
+            if (logFont.lfCharSet == 0)
+            {
+                logFont.lfCharSet = _gdiCharSet;
+            }
+
+            return logFont;
+        }
     }
 }

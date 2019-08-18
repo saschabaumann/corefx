@@ -297,7 +297,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Fact]
         public static void InplaceEncryptTamperTagDecrypt()
         {
@@ -339,7 +338,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCases))]
         public static void AesCcmNistTestsTamperTag(AEADTest testCase)
@@ -362,7 +360,6 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        [ActiveIssue(32710, TestPlatforms.AnyUnix)] 
         [Theory]
         [MemberData(nameof(GetNistCcmTestCasesWithNonEmptyPT))]
         public static void AesCcmNistTestsTamperCiphertext(AEADTest testCase)
@@ -385,22 +382,22 @@ namespace System.Security.Cryptography.Algorithms.Tests
             }
         }
 
-        private static IEnumerable<object[]> GetValidNonceSizes()
+        public static IEnumerable<object[]> GetValidNonceSizes()
         {
             return GetValidSizes(AesCcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidNonceSizes()
+        public static IEnumerable<object[]> GetInvalidNonceSizes()
         {
             return GetInvalidSizes(AesCcm.NonceByteSizes);
         }
 
-        private static IEnumerable<object[]> GetValidTagSizes()
+        public static IEnumerable<object[]> GetValidTagSizes()
         {
             return GetValidSizes(AesCcm.TagByteSizes);
         }
 
-        private static IEnumerable<object[]> GetInvalidTagSizes()
+        public static IEnumerable<object[]> GetInvalidTagSizes()
         {
             return GetInvalidSizes(AesCcm.TagByteSizes);
         }

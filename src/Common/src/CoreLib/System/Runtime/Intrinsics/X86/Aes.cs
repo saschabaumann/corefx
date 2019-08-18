@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -10,12 +11,13 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel AES hardware instructions via intrinsics
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Aes : Sse2
     {
         internal Aes() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128i _mm_aesdec_si128 (__m128i a, __m128i RoundKey)

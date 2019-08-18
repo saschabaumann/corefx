@@ -21,10 +21,10 @@
 // distribute, sublicense, and/or sell copies of the Software, and to
 // permit persons to whom the Software is furnished to do so, subject to
 // the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be
 // included in all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 // EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -44,13 +44,18 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
+#if netcoreapp
+    [System.ComponentModel.TypeConverter("System.Drawing.IconConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#else
 #if !NETCORE
 #if !MONOTOUCH
     [Editor("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof(System.Drawing.Design.UITypeEditor))]
 #endif
     [TypeConverter(typeof(IconConverter))]
 #endif
+#endif
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         // The PNG signature is specified at http://www.w3.org/TR/PNG/#5PNG-file-signature
@@ -62,12 +67,12 @@ namespace System.Drawing
         {
             internal byte width;        // Width of icon
             internal byte height;       // Height of icon
-            internal byte colorCount;   // colors in icon 
+            internal byte colorCount;   // colors in icon
             internal byte reserved; // Reserved
             internal ushort planes;         // Color Planes
             internal ushort bitCount;       // Bits per pixel
             internal uint bytesInRes;     // bytes in resource
-            internal uint imageOffset;  // position in file 
+            internal uint imageOffset;  // position in file
             internal bool png;       // for unsupported images (vista 256 png)
         };
 
@@ -869,7 +874,7 @@ namespace System.Drawing
                         //both XOR as well as AND mask bytes
                         int iconHeight = bih.biHeight / 2;
 
-                        //bytes per line should should be uint aligned
+                        //bytes per line should be uint aligned
                         int numBytesPerLine = checked((((bih.biWidth * bih.biPlanes * bih.biBitCount) + 31) >> 5) << 2);
 
                         //Determine the XOR array Size

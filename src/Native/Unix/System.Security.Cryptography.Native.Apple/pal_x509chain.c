@@ -63,7 +63,10 @@ int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
     }
 
     SecTrustResultType trustResult;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
     *pOSStatus = SecTrustEvaluate(chain, &trustResult);
+#pragma clang diagnostic pop
 
     // If any error is reported from the function or the trust result value indicates that
     // otherwise was a failed chain build (vs an untrusted chain, etc) return failure and
@@ -171,6 +174,10 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         *pStatus |= PAL_X509ChainRevocationStatusUnknown;
     else if (CFEqual(keyString, CFSTR("MissingIntermediate")))
         *pStatus |= PAL_X509ChainPartialChain;
+    else if (CFEqual(keyString, CFSTR("UnparseableExtension")))
+    {
+        // 10.15 introduced new status code value which is not reported by Windows. Ignoring for now.
+    }
     else if (CFEqual(keyString, CFSTR("WeakLeaf")) || CFEqual(keyString, CFSTR("WeakIntermediates")) ||
              CFEqual(keyString, CFSTR("WeakRoot")) || CFEqual(keyString, CFSTR("WeakKeySize")))
     {
@@ -186,14 +193,15 @@ static void MergeStatusCodes(CFTypeRef key, CFTypeRef value, void* context)
         // It doesn't represent a new error code, and we're still getting the old ones, so
         // just ignore it for now.
     }
-    else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")))
+    else if (CFEqual(keyString, CFSTR("NonEmptySubject")) || CFEqual(keyString, CFSTR("GrayListedKey")) ||
+             CFEqual(keyString, CFSTR("CTRequired")))
     {
         // Not a "problem" that we report.
     }
     else
     {
-#ifdef DEBUGGING_UNKNOWN_VALUE
-        printf("%s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
+#if defined DEBUG || defined DEBUGGING_UNKNOWN_VALUE
+        printf("Unknown Chain Status: %s\n", CFStringGetCStringPtr(keyString, CFStringGetSystemEncoding()));
 #endif
         *pStatus |= PAL_X509ChainErrorUnknownValue;
     }

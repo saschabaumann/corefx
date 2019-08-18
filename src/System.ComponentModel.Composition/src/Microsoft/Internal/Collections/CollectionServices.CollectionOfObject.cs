@@ -12,12 +12,12 @@ namespace Microsoft.Internal.Collections
     {
         public static ICollection<object> GetCollectionWrapper(Type itemType, object collectionObject)
         {
-            if(itemType == null)
+            if (itemType == null)
             {
                 throw new ArgumentNullException(nameof(itemType));
             }
 
-            if(collectionObject == null)
+            if (collectionObject == null)
             {
                 throw new ArgumentNullException(nameof(collectionObject));
             }
@@ -29,7 +29,7 @@ namespace Microsoft.Internal.Collections
                 return (ICollection<object>)collectionObject;
             }
 
-            // Most common .Net collections implement IList as well so for those
+            // Most common .NET collections implement IList as well so for those
             // cases we can optimize the wrapping instead of using reflection to create
             // a generic type.
             if (typeof(IList).IsAssignableFrom(collectionObject.GetType()))

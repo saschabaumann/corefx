@@ -7,7 +7,6 @@ using System.Security.Principal;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.ComponentModel;
-using System.Security.Permissions;
 using System.IO;
 
 namespace System.DirectoryServices.ActiveDirectory
@@ -88,8 +87,8 @@ namespace System.DirectoryServices.ActiveDirectory
             if (context.ContextType != DirectoryContextType.ConfigurationSet)
             {
                 //
-                // only for configurationset, we select a server, so we should not copy over that 
-                // information, for all other types, this is either the same as name of the target or if the target is netbios name 
+                // only for configurationset, we select a server, so we should not copy over that
+                // information, for all other types, this is either the same as name of the target or if the target is netbios name
                 // (for domain and forest) it could be the dns name. We should copy over this information.
                 //
                 this.serverName = context.serverName;
@@ -210,7 +209,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                     {
-                        // try with force rediscovery 
+                        // try with force rediscovery
 
                         errorCode = Locator.DsGetDcNameWrapper(null, tmpTarget, null, (long)PrivateLocatorFlags.DirectoryServicesRequired | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
@@ -259,7 +258,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                 {
-                    // try with force rediscovery 
+                    // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)((PrivateLocatorFlags.GCRequired | PrivateLocatorFlags.DirectoryServicesRequired)) | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
@@ -307,7 +306,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                 {
-                    // try with force rediscovery 
+                    // try with force rediscovery
 
                     errorCode = Locator.DsGetDcNameWrapper(null, context.Name, null, (long)PrivateLocatorFlags.OnlyLDAPNeeded | (long)LocatorOptions.ForceRediscovery, out domainControllerInfo);
 
@@ -360,7 +359,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     if ((e.ErrorCode == unchecked((int)0x80070035)) || (e.ErrorCode == unchecked((int)0x80070033)) || (e.ErrorCode == unchecked((int)0x80005000)))
                     {
-                        // if this returns bad network path 
+                        // if this returns bad network path
                         contextIsValid = false;
                     }
                     else
@@ -640,7 +639,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (domainName == null)
             {
                 //
-                // we should never get to this point here since we should have already verified that the context is valid 
+                // we should never get to this point here since we should have already verified that the context is valid
                 // by the time we get to this point
                 //
                 throw new ActiveDirectoryOperationException(SR.ContextNotAssociatedWithDomain);

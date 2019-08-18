@@ -16,7 +16,7 @@ using KERB_LOGON_SUBMIT_TYPE = Interop.SspiCli.KERB_LOGON_SUBMIT_TYPE;
 using KERB_S4U_LOGON = Interop.SspiCli.KERB_S4U_LOGON;
 using KerbS4uLogonFlags = Interop.SspiCli.KerbS4uLogonFlags;
 using LUID = Interop.LUID;
-using LSA_STRING = Interop.SspiCli.LSA_STRING;
+using LSA_STRING = Interop.Advapi32.LSA_STRING;
 using QUOTA_LIMITS = Interop.SspiCli.QUOTA_LIMITS;
 using SECURITY_LOGON_TYPE = Interop.SspiCli.SECURITY_LOGON_TYPE;
 using TOKEN_SOURCE = Interop.SspiCli.TOKEN_SOURCE;
@@ -41,14 +41,14 @@ namespace System.Security.Principal
         private IdentityReferenceCollection _groups = null;
 
         private SafeAccessTokenHandle _safeTokenHandle = SafeAccessTokenHandle.InvalidHandle;
-        private string _authType = null;
+        private readonly string _authType = null;
         private int _isAuthenticated = -1;
         private volatile TokenImpersonationLevel _impersonationLevel;
         private volatile bool _impersonationLevelInitialized;
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
-        private string _issuerName = DefaultIssuer;
-        private object _claimsIntiailizedLock = new object();
+        private readonly string _issuerName = DefaultIssuer;
+        private readonly object _claimsIntiailizedLock = new object();
         private volatile bool _claimsInitialized;
         private List<Claim> _deviceClaims;
         private List<Claim> _userClaims;
@@ -129,7 +129,7 @@ namespace System.Security.Principal
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
                 // Desktop compat: Desktop never null-checks sUserPrincipalName. Actual behavior is that the null makes it down to Encoding.Unicode.GetBytes() which then throws
-                // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves 
+                // the ArgumentNullException (provided that the prior LSA calls didn't fail first.) To make this compat decision explicit, we'll null check ourselves
                 // and simulate the exception from Encoding.Unicode.GetBytes().
                 if (sUserPrincipalName == null)
                     throw new ArgumentNullException("s");
@@ -417,7 +417,7 @@ namespace System.Security.Principal
                         }
                         else
                         {
-                            /// This is an impersonation token, get the impersonation level
+                            // This is an impersonation token, get the impersonation level
                             int level = GetTokenInformation<int>(TokenInformationClass.TokenImpersonationLevel);
                             impersonationLevel = (TokenImpersonationLevel)level + 1;
                         }
@@ -622,12 +622,9 @@ namespace System.Security.Principal
                     IdentityReferenceCollection groups = new IdentityReferenceCollection();
                     using (SafeLocalAllocHandle pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups))
                     {
-                        uint groupCount = pGroups.Read<uint>(0);
-
                         Interop.TOKEN_GROUPS tokenGroups = pGroups.Read<Interop.TOKEN_GROUPS>(0);
                         Interop.SID_AND_ATTRIBUTES[] groupDetails = new Interop.SID_AND_ATTRIBUTES[tokenGroups.GroupCount];
                         pGroups.ReadArray((uint)Marshal.OffsetOf<Interop.TOKEN_GROUPS>("Groups").ToInt32(),
-
                                           groupDetails,
                                           0,
                                           groupDetails.Length);
@@ -710,7 +707,7 @@ namespace System.Security.Principal
         // internal.
         //
 
-        private static AsyncLocal<SafeAccessTokenHandle> s_currentImpersonatedToken = new AsyncLocal<SafeAccessTokenHandle>(CurrentImpersonatedTokenChanged);
+        private static readonly AsyncLocal<SafeAccessTokenHandle> s_currentImpersonatedToken = new AsyncLocal<SafeAccessTokenHandle>(CurrentImpersonatedTokenChanged);
 
         private static void RunImpersonatedInternal(SafeAccessTokenHandle token, Action action)
         {
@@ -872,7 +869,7 @@ namespace System.Security.Principal
                 case Interop.Errors.ERROR_BAD_LENGTH:
                 // special case for TokenSessionId. Falling through
                 case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
-                    // ptrLength is an [In] param to LocalAlloc 
+                    // ptrLength is an [In] param to LocalAlloc
                     UIntPtr ptrLength = new UIntPtr(dwLength);
                     safeLocalAllocHandle.Dispose();
                     safeLocalAllocHandle = Interop.Kernel32.LocalAlloc(0, ptrLength);
@@ -975,7 +972,7 @@ namespace System.Security.Principal
         /// <summary>
         /// Internal method to initialize the claim collection.
         /// Lazy init is used so claims are not initialized until needed
-        /// </summary>        
+        /// </summary>
         private void InitializeClaims()
         {
             if (!_claimsInitialized)

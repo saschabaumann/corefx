@@ -17,9 +17,13 @@ namespace System.Drawing
     /// </summary>
     [ImmutableObject(true)]
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
+#if netcoreapp
+    [TypeConverter("System.Drawing.ImageConverter, System.Windows.Extensions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51")]
+#endif
     public abstract partial class Image : MarshalByRefObject, IDisposable, ICloneable, ISerializable
     {
-        // The signature of this delegate is incorrect. The signature of the corresponding 
+        // The signature of this delegate is incorrect. The signature of the corresponding
         // native callback function is:
         // extern "C" {
         //     typedef BOOL (CALLBACK * ImageAbort)(VOID *);
@@ -94,6 +98,38 @@ namespace System.Drawing
         /// Creates an <see cref='Image'/> from the specified file.
         /// </summary>
         public static Image FromFile(string filename) => FromFile(filename, false);
+
+        public static Image FromFile(string filename, bool useEmbeddedColorManagement)
+        {
+            if (!File.Exists(filename))
+            {
+                // Throw a more specific exception for invalid paths that are null or empty,
+                // contain invalid characters or are too long.
+                filename = Path.GetFullPath(filename);
+                throw new FileNotFoundException(filename);
+            }
+
+            // GDI+ will read this file multiple times. Get the fully qualified path
+            // so if our app changes default directory we won't get an error
+            filename = Path.GetFullPath(filename);
+
+            IntPtr image = IntPtr.Zero;
+
+            if (useEmbeddedColorManagement)
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromFileICM(filename, out image));
+            }
+            else
+            {
+                Gdip.CheckStatus(Gdip.GdipLoadImageFromFile(filename, out image));
+            }
+
+            ValidateImage(image);
+
+            Image img = CreateImageObject(image);
+            EnsureSave(img, filename, null);
+            return img;
+        }
 
         /// <summary>
         /// Creates an <see cref='Image'/> from the specified data stream.
@@ -294,6 +330,40 @@ namespace System.Drawing
         }
 
         /// <summary>
+        /// Returns information about the codecs used for this <see cref='Image'/>.
+        /// </summary>
+        public EncoderParameters GetEncoderParameterList(Guid encoder)
+        {
+            EncoderParameters p;
+
+            Gdip.CheckStatus(Gdip.GdipGetEncoderParameterListSize(
+                new HandleRef(this, nativeImage),
+                ref encoder,
+                out int size));
+
+            if (size <= 0)
+                return null;
+
+            IntPtr buffer = Marshal.AllocHGlobal(size);
+            try
+            {
+                Gdip.CheckStatus(Gdip.GdipGetEncoderParameterList(
+                    new HandleRef(this, nativeImage),
+                    ref encoder,
+                    size,
+                    buffer));
+
+                p = EncoderParameters.ConvertFromMemory(buffer);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+
+            return p;
+        }
+
+        /// <summary>
         /// Creates a <see cref='Bitmap'/> from a Windows handle.
         /// </summary>
         public static Bitmap FromHbitmap(IntPtr hbitmap) => FromHbitmap(hbitmap, IntPtr.Zero);
@@ -303,10 +373,7 @@ namespace System.Drawing
         /// </summary>
         public static Bitmap FromHbitmap(IntPtr hbitmap, IntPtr hpalette)
         {
-            IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromHBITMAP(new HandleRef(null, hbitmap), new HandleRef(null, hpalette), out bitmap);
-            Gdip.CheckStatus(status);
-
+            Gdip.CheckStatus(Gdip.GdipCreateBitmapFromHBITMAP(hbitmap, hpalette, out IntPtr bitmap));
             return new Bitmap(bitmap);
         }
 
@@ -336,7 +403,7 @@ namespace System.Drawing
         internal void SetNativeImage(IntPtr handle)
         {
             if (handle == IntPtr.Zero)
-                throw new ArgumentException(SR.Format(SR.NativeHandle0), nameof(handle));
+                throw new ArgumentException(SR.NativeHandle0, nameof(handle));
 
             nativeImage = handle;
         }
@@ -367,7 +434,37 @@ namespace System.Drawing
             }
         }
 
-        internal unsafe static void EnsureSave(Image image, string filename, Stream dataStream)
+        /// <summary>
+        /// Returns the size of the specified pixel format.
+        /// </summary>
+        public static int GetPixelFormatSize(PixelFormat pixfmt)
+        {
+            return (unchecked((int)pixfmt) >> 8) & 0xFF;
+        }
+
+        /// <summary>
+        /// Returns a value indicating whether the pixel format contains alpha information.
+        /// </summary>
+        public static bool IsAlphaPixelFormat(PixelFormat pixfmt)
+        {
+            return (pixfmt & PixelFormat.Alpha) != 0;
+        }
+
+        internal static Image CreateImageObject(IntPtr nativeImage)
+        {
+            Gdip.CheckStatus(Gdip.GdipGetImageType(nativeImage, out int type));
+            switch ((ImageType)type)
+            {
+                case ImageType.Bitmap:
+                    return new Bitmap(nativeImage);
+                case ImageType.Metafile:
+                    return new Metafile(nativeImage);
+                default:
+                    throw new ArgumentException(SR.InvalidImage);
+            }
+        }
+
+        internal static unsafe void EnsureSave(Image image, string filename, Stream dataStream)
         {
             if (image.RawFormat.Equals(ImageFormat.Gif))
             {
@@ -379,16 +476,9 @@ namespace System.Drawing
                     return;
                 }
 
-                Span<Guid> guids;
-                if (dimensions < 16)
-                {
-                    Guid* g = stackalloc Guid[dimensions];
-                    guids = new Span<Guid>(g, dimensions);
-                }
-                else
-                {
-                    guids = new Span<Guid>(new Guid[dimensions]);
-                }
+                Span<Guid> guids = dimensions < 16 ?
+                    stackalloc Guid[dimensions] :
+                    new Guid[dimensions];
 
                 fixed (Guid* g = &MemoryMarshal.GetReference(guids))
                 {
@@ -465,4 +555,3 @@ namespace System.Drawing
         }
     }
 }
-

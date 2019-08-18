@@ -100,10 +100,10 @@ namespace System.Net.WebSockets
                 validStatesText = string.Join(", ", validStates);
             }
 
-            throw new WebSocketException(SR.Format(SR.net_WebSockets_InvalidState, state, validStatesText));
+            throw new WebSocketException(WebSocketError.InvalidState, SR.Format(SR.net_WebSockets_InvalidState, state, validStatesText));
         }
 
-        protected static bool IsStateTerminal(WebSocketState state) => 
+        protected static bool IsStateTerminal(WebSocketState state) =>
             state == WebSocketState.Closed || state == WebSocketState.Aborted;
 
         public static ArraySegment<byte> CreateClientBuffer(int receiveBufferSize, int sendBufferSize)

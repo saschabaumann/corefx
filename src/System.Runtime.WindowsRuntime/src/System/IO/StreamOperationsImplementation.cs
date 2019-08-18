@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Runtime.InteropServices;
@@ -36,7 +35,6 @@ namespace System.IO
             Debug.Assert(0 <= count);
             Debug.Assert(count <= int.MaxValue);
             Debug.Assert(count <= buffer.Capacity);
-            Contract.EndContractBlock();
 
             // We will return a different buffer to the user backed directly by the memory stream (avoids memory copy).
             // This is permitted by the WinRT stream contract.
@@ -52,11 +50,11 @@ namespace System.IO
                 if (dataBuffer.Length > 0)
                     memStream.Seek(dataBuffer.Length, SeekOrigin.Current);
 
-                return AsyncInfo.CreateCompletedOperation<IBuffer, UInt32>(dataBuffer);
+                return AsyncInfo.CreateCompletedOperation<IBuffer, uint>(dataBuffer);
             }
             catch (Exception ex)
             {
-                return AsyncInfo.CreateFaultedOperation<IBuffer, UInt32>(ex);
+                return AsyncInfo.CreateFaultedOperation<IBuffer, uint>(ex);
             }
         }  // ReadAsync_MemoryStream
 
@@ -72,7 +70,6 @@ namespace System.IO
             Debug.Assert(count <= int.MaxValue);
             Debug.Assert(count <= buffer.Capacity);
             Debug.Assert(options == InputStreamOptions.None || options == InputStreamOptions.Partial || options == InputStreamOptions.ReadAhead);
-            Contract.EndContractBlock();
 
             int bytesRequested = (int)count;
 
@@ -82,7 +79,7 @@ namespace System.IO
             //         read into a managed array. If we used the user-supplied buffer we would need to copy data into it after every read.
             //         The spec allows to return a buffer instance that is not the same as passed by the user. So, we will create an own
             //         buffer instance, read data *directly* into the array backing it and then return it to the user.
-            //         Note: the allocation costs we are paying for the new buffer are unavoidable anyway, as we we would need to create
+            //         Note: the allocation costs we are paying for the new buffer are unavoidable anyway, as we would need to create
             //         an array to read into either way.
 
             IBuffer dataBuffer = buffer as WindowsRuntimeBuffer;
@@ -153,7 +150,7 @@ namespace System.IO
                 return dataBuffer;
             };  // readOperation
 
-            return AsyncInfo.Run<IBuffer, UInt32>(readOperation);
+            return AsyncInfo.Run<IBuffer, uint>(readOperation);
         }  // ReadAsync_AbstractStream
 
         #endregion ReadAsync implementations
@@ -166,7 +163,6 @@ namespace System.IO
             Debug.Assert(stream != null);
             Debug.Assert(stream.CanWrite);
             Debug.Assert(buffer != null);
-            Contract.EndContractBlock();
 
             // Choose the optimal writing strategy for the kind of buffer supplied:
             Func<CancellationToken, IProgress<uint>, Task<uint>> writeOperation;
@@ -218,7 +214,7 @@ namespace System.IO
             }  // if-else
 
             // Construct and run the async operation:
-            return AsyncInfo.Run<UInt32, UInt32>(writeOperation);
+            return AsyncInfo.Run<uint, uint>(writeOperation);
         }  // WriteAsync_AbstractStream
 
         #endregion WriteAsync implementations
@@ -230,7 +226,6 @@ namespace System.IO
         {
             Debug.Assert(stream != null);
             Debug.Assert(stream.CanWrite);
-            Contract.EndContractBlock();
 
             Func<CancellationToken, Task<bool>> flushOperation = async (cancelToken) =>
             {
@@ -242,7 +237,7 @@ namespace System.IO
             };
 
             // Construct and run the async operation:
-            return AsyncInfo.Run<Boolean>(flushOperation);
+            return AsyncInfo.Run<bool>(flushOperation);
         }
         #endregion FlushAsync implementations
 

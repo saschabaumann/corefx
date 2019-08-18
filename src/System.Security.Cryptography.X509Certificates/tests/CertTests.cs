@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
+using Microsoft.DotNet.XUnitExtensions;
 using Test.Cryptography;
 using Xunit;
 using Xunit.Abstractions;
@@ -97,7 +98,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
-        [Fact]
+        [ActiveIssue(29779)]
+        [ConditionalFact]
         [OuterLoop("May require using the network, to download CRLs and intermediates")]
         public void TestVerify()
         {
@@ -117,6 +119,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 {
                     LogVerifyErrors(microsoftDotComIssuer, "MicrosoftDotComIssuerBytes");
                 }
+
                 Assert.True(success, "MicrosoftDotComIssuerBytes");
             }
 

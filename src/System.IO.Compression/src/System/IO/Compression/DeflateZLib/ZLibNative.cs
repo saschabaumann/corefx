@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -46,7 +46,7 @@ namespace System.IO.Compression
         /// <p><strong>How to choose a compression level:</strong></p>
         ///
         /// <p>The names <code>NoCompression</code>, <code>BestSpeed</code>, <code>DefaultCompression</code> are taken over from the corresponding
-        /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.
+        /// ZLib definitions, which map to our public NoCompression, Fastest, and Optimal respectively.</p>
         /// <p><em>Optimal Compression:</em></p>
         /// <p><code>ZLibNative.CompressionLevel compressionLevel = ZLibNative.CompressionLevel.DefaultCompression;</code> <br />
         ///    <code>int windowBits = 15;  // or -15 if no headers required</code> <br />
@@ -106,9 +106,9 @@ namespace System.IO.Compression
         /// <p><strong>From the ZLib manual:</strong></p>
         /// <p>ZLib's <code>windowBits</code> parameter is the base two logarithm of the window size (the size of the history buffer).
         /// It should be in the range 8..15 for this version of the library. Larger values of this parameter result in better compression
-        /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br />
+        /// at the expense of memory usage. The default value is 15 if deflateInit is used instead.<br /></p>
         /// <strong>Note</strong>:
-        /// <code>windowBits</code> can also be –8..–15 for raw deflate. In this case, -windowBits determines the window size.
+        /// <code>windowBits</code> can also be -8..-15 for raw deflate. In this case, -windowBits determines the window size.
         /// <code>Deflate</code> will then generate raw deflate data with no ZLib header or trailer, and will not compute an adler32 check value.<br />
         /// <p>See also: How to choose a compression level (in comments to <code>CompressionLevel</code>.</p>
         /// </summary>
@@ -200,17 +200,15 @@ namespace System.IO.Compression
             }
 
 
-            protected override bool ReleaseHandle()
-            {
-                switch (InitializationState)
+            protected override bool ReleaseHandle() =>
+                InitializationState switch
                 {
-                    case State.NotInitialized: return true;
-                    case State.InitializedForDeflate: return (DeflateEnd() == ErrorCode.Ok);
-                    case State.InitializedForInflate: return (InflateEnd() == ErrorCode.Ok);
-                    case State.Disposed: return true;
-                    default: return false;  // This should never happen. Did we forget one of the State enum values in the switch?
-                }
-            }
+                    State.NotInitialized => true,
+                    State.InitializedForDeflate => (DeflateEnd() == ErrorCode.Ok),
+                    State.InitializedForInflate => (InflateEnd() == ErrorCode.Ok),
+                    State.Disposed => true,
+                    _ => false,  // This should never happen. Did we forget one of the State enum values in the switch?
+                };
 
             public IntPtr NextIn
             {

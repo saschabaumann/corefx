@@ -66,7 +66,7 @@ namespace System.IO.Compression
                     }
                 }
 
-                lastResult = _decoder.Decompress(_buffer.AsSpan(_bufferOffset, _bufferCount), buffer, out int bytesConsumed, out int bytesWritten);
+                lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), buffer, out int bytesConsumed, out int bytesWritten);
                 if (lastResult == OperationStatus.InvalidData)
                 {
                     throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);
@@ -120,7 +120,6 @@ namespace System.IO.Compression
             try
             {
                 int totalWritten = 0;
-                Memory<byte> source = Memory<byte>.Empty;
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
                 // We want to continue calling Decompress until we're either out of space for output or until Decompress indicates it is finished.
                 while (buffer.Length > 0 && lastResult != OperationStatus.Done)
@@ -153,7 +152,7 @@ namespace System.IO.Compression
                     }
 
                     cancellationToken.ThrowIfCancellationRequested();
-                    lastResult = _decoder.Decompress(_buffer.AsSpan(_bufferOffset, _bufferCount), buffer.Span, out int bytesConsumed, out int bytesWritten);
+                    lastResult = _decoder.Decompress(new ReadOnlySpan<byte>(_buffer, _bufferOffset, _bufferCount), buffer.Span, out int bytesConsumed, out int bytesWritten);
                     if (lastResult == OperationStatus.InvalidData)
                     {
                         throw new InvalidOperationException(SR.BrotliStream_Decompress_InvalidData);

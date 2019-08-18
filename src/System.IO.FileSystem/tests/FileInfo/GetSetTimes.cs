@@ -11,36 +11,55 @@ namespace System.IO.Tests
 {
     public class FileInfo_GetSetTimes : InfoGetSetTimes<FileInfo>
     {
-        public override FileInfo GetExistingItem()
+        protected override FileInfo GetExistingItem()
         {
             string path = GetTestFilePath();
             File.Create(path).Dispose();
             return new FileInfo(path);
         }
 
-        public FileInfo GetNonZeroMilliSec()
+        private static bool HasNonZeroNanoseconds(DateTime dt) => dt.Ticks % 10 != 0;
+
+        public FileInfo GetNonZeroMilliseconds()
         {
             FileInfo fileinfo = new FileInfo(GetTestFilePath());
-            for (int i = 0; i < 5; i++)
+            fileinfo.Create().Dispose();
+
+            if (fileinfo.LastWriteTime.Millisecond == 0)
             {
-                fileinfo.Create().Dispose();
-                if (fileinfo.LastWriteTime.Millisecond != 0)
-                    break;
-
-                // This case should only happen 1/1000 times, unless the OS/Filesystem does
-                // not support millisecond granularity.
-
-                // If it's 1/1000, or low granularity, this may help:
-                Thread.Sleep(1234);
+                DateTime dt = fileinfo.LastWriteTime;
+                dt = dt.AddMilliseconds(1);
+                fileinfo.LastWriteTime = dt;
             }
+
+            Assert.NotEqual(0, fileinfo.LastWriteTime.Millisecond);
             return fileinfo;
         }
 
-        public override FileInfo GetMissingItem() => new FileInfo(GetTestFilePath());
+        public FileInfo GetNonZeroNanoseconds()
+        {
+            FileInfo fileinfo = new FileInfo(GetTestFilePath());
+            fileinfo.Create().Dispose();
 
-        public override string GetItemPath(FileInfo item) => item.FullName;
+            if (!HasNonZeroNanoseconds(fileinfo.LastWriteTime))
+            {
+                if (PlatformDetection.IsOSX)
+                    return null;
 
-        public override void InvokeCreate(FileInfo item) => item.Create();
+                DateTime dt = fileinfo.LastWriteTime;
+                dt = dt.AddTicks(1);
+                fileinfo.LastWriteTime = dt;
+            }
+
+            Assert.True(HasNonZeroNanoseconds(fileinfo.LastWriteTime));
+            return fileinfo;
+        }
+
+        protected override FileInfo GetMissingItem() => new FileInfo(GetTestFilePath());
+
+        protected override string GetItemPath(FileInfo item) => item.FullName;
+
+        protected override void InvokeCreate(FileInfo item) => item.Create();
 
         public override IEnumerable<TimeFunction> TimeFunctions(bool requiresRoundtripping = false)
         {
@@ -88,15 +107,45 @@ namespace System.IO.Tests
         [ConditionalFact(nameof(isNotHFS))]
         public void CopyToMillisecondPresent()
         {
-            FileInfo input = GetNonZeroMilliSec();
+            FileInfo input = GetNonZeroMilliseconds();
             FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
 
             Assert.Equal(0, output.LastWriteTime.Millisecond);
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
 
-            Assert.NotEqual(0, input.LastWriteTime.Millisecond);
+            Assert.Equal(input.LastWriteTime.Millisecond, output.LastWriteTime.Millisecond);
             Assert.NotEqual(0, output.LastWriteTime.Millisecond);
+        }
+
+        [ConditionalFact(nameof(isNotHFS))]
+        public void CopyToNanosecondsPresent()
+        {
+            FileInfo input = GetNonZeroNanoseconds();
+            if (input == null)
+                return;
+
+            FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
+
+            output.Directory.Create();
+            output = input.CopyTo(output.FullName, true);
+
+            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            Assert.True(HasNonZeroNanoseconds(output.LastWriteTime));
+        }
+
+        [ConditionalFact(nameof(isHFS))]
+        public void CopyToNanosecondsPresent_HFS()
+        {
+            FileInfo input = new FileInfo(GetTestFilePath());
+            input.Create().Dispose();
+            FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
+
+            output.Directory.Create();
+            output = input.CopyTo(output.FullName, true);
+
+            Assert.Equal(input.LastWriteTime.Ticks, output.LastWriteTime.Ticks);
+            Assert.False(HasNonZeroNanoseconds(output.LastWriteTime));
         }
 
         [ConditionalFact(nameof(isHFS))]
@@ -114,7 +163,7 @@ namespace System.IO.Tests
         [ConditionalFact(nameof(isNotHFS))]
         public void MoveToMillisecondPresent()
         {
-            FileInfo input = GetNonZeroMilliSec();
+            FileInfo input = GetNonZeroMilliseconds();
             string dest = Path.Combine(input.DirectoryName, GetTestFileName());
 
             input.MoveTo(dest);
@@ -130,7 +179,7 @@ namespace System.IO.Tests
             FileInfo output = new FileInfo(Path.Combine(GetTestFilePath(), input.Name));
             output.Directory.Create();
             output = input.CopyTo(output.FullName, true);
-            Assert.Equal(0, input.LastWriteTime.Millisecond);
+            Assert.Equal(input.LastWriteTime.Millisecond, output.LastWriteTime.Millisecond);
             Assert.Equal(0, output.LastWriteTime.Millisecond);
         }
 
@@ -155,7 +204,7 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         public void BirthTimeIsNotNewerThanLowestOfAccessModifiedTimes()
         {
-            // On Linux (if no birth time), we synthesize CreationTime from the oldest of 
+            // On Linux (if no birth time), we synthesize CreationTime from the oldest of
             // status changed time (ctime) and write time (mtime)
             // Sanity check that it is in that range.
 

@@ -41,7 +41,7 @@ using Gdip = System.Drawing.SafeNativeMethods.Gdip;
 namespace System.Drawing.Printing
 {
     /// <summary>
-    /// This class is designed to cache the values retrieved by the 
+    /// This class is designed to cache the values retrieved by the
     /// native printing services, as opposed to GlobalPrintingServices, which
     /// doesn't cache any values.
     /// </summary>
@@ -49,21 +49,10 @@ namespace System.Drawing.Printing
     {
         #region Private Fields
 
-        private static Hashtable doc_info = new Hashtable();
-        private static bool cups_installed;
-
-        private static Hashtable installed_printers;
+        private static readonly Hashtable doc_info = new Hashtable();
+        private static readonly bool cups_installed = CheckCupsInstalled();
+        private static readonly Hashtable installed_printers = new Hashtable();
         private static string default_printer = string.Empty;
-
-        #endregion
-
-        #region Constructor
-
-        static PrintingServices()
-        {
-            installed_printers = new Hashtable();
-            CheckCupsInstalled();
-        }
 
         #endregion
 
@@ -101,7 +90,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Do a cups call to check if it is installed
         /// </summary>
-        private static void CheckCupsInstalled()
+        private static bool CheckCupsInstalled()
         {
             try
             {
@@ -114,11 +103,10 @@ namespace System.Drawing.Printing
 #else
                 Console.WriteLine("libcups not found. To have printing support, you need cups installed");
 #endif
-                cups_installed = false;
-                return;
+                return false;
             }
 
-            cups_installed = true;
+            return true;
         }
 
         /// <summary>
@@ -191,7 +179,7 @@ namespace System.Drawing.Printing
         /// <summary>
         /// Checks if a printer has a valid PPD file. Caches the result unless force is true
         /// </summary>
-        /// <param name="force">Does the check disregarding the last cached value if true</param>
+        /// <param name="printer">Printer name</param>
         internal static bool IsPrinterValid(string printer)
         {
             if (!cups_installed || printer == null | printer == string.Empty)
@@ -349,7 +337,7 @@ namespace System.Drawing.Printing
         }
 
         /// <summary>
-        /// Loads the global options of a printer. 
+        /// Loads the global options of a printer.
         /// </summary>
         /// <param name="options">The options field of a printer's CUPS_DESTS structure</param>
         /// <param name="numOptions">The number of options of the printer</param>
@@ -587,8 +575,6 @@ namespace System.Drawing.Printing
 
         /// <summary>
         /// </summary>
-        /// <param name="load"></param>
-        /// <param name="def_printer"></param>
         private static void LoadPrinters()
         {
             installed_printers.Clear();
@@ -811,7 +797,7 @@ namespace System.Drawing.Printing
 
         #region Print job methods
 
-        static string tmpfile;
+        private static string tmpfile;
 
         /// <summary>
         /// Gets a pointer to an options list parsed from the printer's current settings, to use when setting up the printing job
@@ -827,21 +813,23 @@ namespace System.Drawing.Printing
             int width = size.Width * 72 / 100;
             int height = size.Height * 72 / 100;
 
-            StringBuilder sb = new StringBuilder();
-            sb.Append(
-                "copies=" + printer_settings.Copies + " " +
-                "Collate=" + printer_settings.Collate + " " +
-                "ColorModel=" + (page_settings.Color ? "Color" : "Black") + " " +
-                "PageSize=" + string.Format("Custom.{0}x{1}", width, height) + " " +
-                "landscape=" + page_settings.Landscape
-            );
+            var sb = new StringBuilder();
+            sb.Append("copies=").Append(printer_settings.Copies).Append(' ')
+                .Append("Collate=").Append(printer_settings.Collate).Append(' ')
+                .Append("ColorModel=").Append(page_settings.Color ? "Color" : "Black").Append(' ')
+                .Append("PageSize=Custom.").Append(width).Append('x').Append(height).Append(' ')
+                .Append("landscape=").Append(page_settings.Landscape);
 
             if (printer_settings.CanDuplex)
             {
                 if (printer_settings.Duplex == Duplex.Simplex)
+                {
                     sb.Append(" Duplex=None");
+                }
                 else
+                {
                     sb.Append(" Duplex=DuplexNoTumble");
+                }
             }
 
             return LibcupsNative.cupsParseOptions(sb.ToString(), 0, ref options);

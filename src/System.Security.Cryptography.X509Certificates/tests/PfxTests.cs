@@ -34,7 +34,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedThumbprint, thumbPrint);
             }
         }
-        
+
         [Theory]
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
         [Fact]
         public static void TestPrivateKeyProperty()
         {
@@ -125,15 +125,12 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 AsymmetricAlgorithm alg = c.PrivateKey;
                 Assert.NotNull(alg);
                 Assert.Same(alg, c.PrivateKey);
-                Assert.IsAssignableFrom(typeof(RSA), alg);
+                Assert.IsAssignableFrom<RSA>(alg);
                 VerifyPrivateKey((RSA)alg);
 
                 // Currently unable to set PrivateKey
-                if (!PlatformDetection.IsFullFramework)
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = null);
-                    Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
-                }
+                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = null);
+                Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
             }
         }
 
@@ -174,7 +171,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-        
+
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
@@ -188,10 +185,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Null(pubOnly.PrivateKey);
 
                 // Currently unable to set PrivateKey
-                if (!PlatformDetection.IsFullFramework)
-                {
-                    Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
-                }
+                Assert.Throws<PlatformNotSupportedException>(() => cert.PrivateKey = null);
 
                 using (var privKey = cert.GetECDsaPrivateKey())
                 {

@@ -19,7 +19,7 @@ namespace System.ComponentModel
     /// For a property named XXX of type YYY, the associated component class is
     /// required to implement two methods of the following
     /// form:
-    /// 
+    ///
     /// <code>
     /// public YYY GetXXX();
     /// public void SetXXX(YYY value);
@@ -70,9 +70,7 @@ namespace System.ComponentModel
         private MethodInfo _shouldSerializeMethod;      // the should serialize method
         private MethodInfo _resetMethod;                // the reset property method
         private EventDescriptor _realChangedEvent;           // <propertyname>Changed event handler on object
-#if FEATURE_INOTIFYPROPERTYCHANGED
         private EventDescriptor _realIPropChangedEvent;      // INotifyPropertyChanged.PropertyChanged event handler on object
-#endif
         private readonly Type _receiverType;               // Only set if we are an extender
 
         /// <summary>
@@ -88,12 +86,12 @@ namespace System.ComponentModel
                 if (type == null)
                 {
                     Debug.WriteLine($"type == null, name == {name}");
-                    throw new ArgumentException(string.Format(SR.ErrorInvalidPropertyType, name));
+                    throw new ArgumentException(SR.Format(SR.ErrorInvalidPropertyType, name));
                 }
                 if (componentClass == null)
                 {
                     Debug.WriteLine($"componentClass == null, name == {name}");
-                    throw new ArgumentException(string.Format(SR.InvalidNullArgument, nameof(componentClass)));
+                    throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
                 }
                 _type = type;
                 _componentClass = componentClass;
@@ -143,7 +141,7 @@ namespace System.ComponentModel
 
             if (componentClass == null)
             {
-                throw new ArgumentException(string.Format(SR.InvalidNullArgument, nameof(componentClass)));
+                throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             }
 
             // If the classes are the same, we can potentially optimize the method fetch because
@@ -224,7 +222,7 @@ namespace System.ComponentModel
             {
                 if (!_state[s_bitChangedQueried])
                 {
-                    _realChangedEvent = TypeDescriptor.GetEvents(ComponentType)[string.Format(CultureInfo.InvariantCulture, "{0}Changed", Name)];
+                    _realChangedEvent = TypeDescriptor.GetEvents(ComponentType)[Name + "Changed"];
                     _state[s_bitChangedQueried] = true;
                 }
 
@@ -239,21 +237,17 @@ namespace System.ComponentModel
         {
             get
             {
-#if FEATURE_INOTIFYPROPERTYCHANGED
                 if (!_state[s_bitIPropChangedQueried])
                 {
                     if (typeof(INotifyPropertyChanged).IsAssignableFrom(ComponentType))
                     {
                         _realIPropChangedEvent = TypeDescriptor.GetEvents(typeof(INotifyPropertyChanged))["PropertyChanged"];
                     }
-    
+
                     _state[s_bitIPropChangedQueried] = true;
                 }
 
                 return _realIPropChangedEvent;
-#else
-                return null;
-#endif
             }
         }
 
@@ -304,20 +298,16 @@ namespace System.ComponentModel
                     {
                         if (_propInfo == null)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#else
-                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#endif
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
-                            _getMethod = _propInfo.GetMethod;
+                            _getMethod = _propInfo.GetGetMethod(nonPublic: true);
                         }
                         if (_getMethod == null)
                         {
-                            throw new InvalidOperationException(string.Format(SR.ErrorMissingPropertyAccessors, _componentClass.FullName + "." + Name));
+                            throw new InvalidOperationException(SR.Format(SR.ErrorMissingPropertyAccessors, _componentClass.FullName + "." + Name));
                         }
                     }
                     else
@@ -325,7 +315,7 @@ namespace System.ComponentModel
                         _getMethod = FindMethod(_componentClass, "Get" + Name, new Type[] { _receiverType }, _type);
                         if (_getMethod == null)
                         {
-                            throw new ArgumentException(string.Format(SR.ErrorMissingPropertyAccessors, Name));
+                            throw new ArgumentException(SR.Format(SR.ErrorMissingPropertyAccessors, Name));
                         }
                     }
                     _state[s_bitGetQueried] = true;
@@ -392,14 +382,11 @@ namespace System.ComponentModel
                     {
                         for (Type t = ComponentType.BaseType; t != null && t != typeof(object); t = t.BaseType)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
-                            PropertyInfo p = t.GetProperty(name, bindingFlags, null, PropertyType, Array.Empty<Type>(), null);
-#endif
-                            PropertyInfo p = t.GetProperty(name, PropertyType, Array.Empty<Type>(), null);
+                            PropertyInfo p = t.GetProperty(name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), null);
                             if (p != null)
                             {
-                                _setMethod = p.SetMethod;
+                                _setMethod = p.GetSetMethod(nonPublic: false);
                                 if (_setMethod != null)
                                 {
                                     break;
@@ -416,16 +403,12 @@ namespace System.ComponentModel
                     {
                         if (_propInfo == null)
                         {
-#if VERIFY_REFLECTION_CHANGE
                             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.GetProperty;
-                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#else
-                            _propInfo = _componentClass.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-#endif
+                            _propInfo = _componentClass.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                         }
                         if (_propInfo != null)
                         {
-                            _setMethod = _propInfo.SetMethod;
+                            _setMethod = _propInfo.GetSetMethod(nonPublic: true);
                         }
                     }
                     else
@@ -581,7 +564,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -629,7 +612,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -778,30 +761,18 @@ namespace System.ComponentModel
                 {
                     MemberInfo memberInfo = null;
 
-#if VERIFY_REFLECTION_CHANGE
                     BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly;
                     // Fill in our member info so we can get at the custom attributes.
                     if (IsExtender)
                     {
                         //receiverType is used to avoid ambitiousness when there are overloads for the get method.
-                        memberInfo = currentReflectType.GetMethod("Get" + Name, bindingFlags, null, new Type[] { _receiverType }, null);
+                        memberInfo = currentReflectType.GetMethod("Get" + Name, bindingFlags, binder: null, new Type[] { _receiverType }, modifiers: null);
                     }
                     else
                     {
-                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
+                        memberInfo = currentReflectType.GetProperty(Name, bindingFlags, binder: null, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
                     }
-#else
-                    // Fill in our member info so we can get at the custom attributes.
-                    if (IsExtender)
-                    {
-                        //receiverType is used to avoid ambitiousness when there are overloads for the get method.
-                        memberInfo = currentReflectType.GetMethod("Get" + Name, new Type[] { _receiverType }, null);
-                    }
-                    else
-                    {
-                        memberInfo = currentReflectType.GetProperty(Name, PropertyType, Array.Empty<Type>(), Array.Empty<ParameterModifier>());
-                    }
-#endif
+
                     // Get custom attributes for the member info.
                     if (memberInfo != null)
                     {
@@ -870,7 +841,7 @@ namespace System.ComponentModel
             // property, so we want to add them last.
             base.FillAttributes(attributes);
 
-            // Finally, override any form of ReadOnlyAttribute. 
+            // Finally, override any form of ReadOnlyAttribute.
             if (SetMethodValue == null)
             {
                 attributes.Add(ReadOnlyAttribute.Yes);
@@ -925,7 +896,7 @@ namespace System.ComponentModel
 
                     string message = t.Message ?? t.GetType().Name;
 
-                    throw new TargetInvocationException(string.Format(SR.ErrorPropertyAccessorException, Name, name, message), t);
+                    throw new TargetInvocationException(SR.Format(SR.ErrorPropertyAccessorException, Name, name, message), t);
                 }
             }
             Debug.WriteLine("[" + Name + "]:   ---> returning: null");
@@ -1044,7 +1015,7 @@ namespace System.ComponentModel
                         {
                             return;
                         }
-                        throw coEx;
+                        throw;
                     }
                 }
 
@@ -1106,7 +1077,7 @@ namespace System.ComponentModel
                             {
                                 return;
                             }
-                            throw coEx;
+                            throw;
                         }
                     }
 
@@ -1135,7 +1106,7 @@ namespace System.ComponentModel
                             }
                             else
                             {
-                                throw t;
+                                throw;
                             }
                         }
                     }

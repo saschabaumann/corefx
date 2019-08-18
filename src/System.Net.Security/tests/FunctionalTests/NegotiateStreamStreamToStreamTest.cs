@@ -13,9 +13,11 @@ using Xunit;
 
 namespace System.Net.Security.Tests
 {
-    [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream only supports client-side functionality on Unix
+    [PlatformSpecific(TestPlatforms.Windows)] // NegotiateStream client needs explicit credentials or SPNs on unix.
     public abstract class NegotiateStreamStreamToStreamTest
     {
+        public static bool IsNtlmInstalled => Capability.IsNtlmInstalled();
+
         private const int PartialBytesToRead = 5;
         private static readonly byte[] s_sampleMsg = Encoding.UTF8.GetBytes("Sample Test Message");
 
@@ -26,7 +28,7 @@ namespace System.Net.Security.Tests
         protected abstract Task AuthenticateAsClientAsync(NegotiateStream client, NetworkCredential credential, string targetName);
         protected abstract Task AuthenticateAsServerAsync(NegotiateStream server);
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -47,36 +49,36 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(false, serverIdentity.IsAuthenticated);
+                Assert.False(serverIdentity.IsAuthenticated);
                 Assert.Equal("", serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Authentication_TargetName_Success()
         {
             string targetName = "testTargetName";
@@ -103,37 +105,36 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(true, serverIdentity.IsAuthenticated);
+                Assert.True(serverIdentity.IsAuthenticated);
                 Assert.Equal(targetName, serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
-                Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertIsCurrentIdentity(clientIdentity);
             }
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Core difference in behavior: https://github.com/dotnet/corefx/issues/5241")]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Authentication_EmptyCredentials_Fails()
         {
             string targetName = "testTargetName";
@@ -164,38 +165,38 @@ namespace System.Net.Security.Tests
                 // Expected Client property values:
                 Assert.True(client.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, client.ImpersonationLevel);
-                Assert.Equal(true, client.IsEncrypted);
-                Assert.Equal(false, client.IsMutuallyAuthenticated);
-                Assert.Equal(false, client.IsServer);
-                Assert.Equal(true, client.IsSigned);
-                Assert.Equal(false, client.LeaveInnerStreamOpen);
+                Assert.True(client.IsEncrypted);
+                Assert.False(client.IsMutuallyAuthenticated);
+                Assert.False(client.IsServer);
+                Assert.True(client.IsSigned);
+                Assert.False(client.LeaveInnerStreamOpen);
 
                 IIdentity serverIdentity = client.RemoteIdentity;
                 Assert.Equal("NTLM", serverIdentity.AuthenticationType);
-                Assert.Equal(true, serverIdentity.IsAuthenticated);
+                Assert.True(serverIdentity.IsAuthenticated);
                 Assert.Equal(targetName, serverIdentity.Name);
 
                 // Expected Server property values:
                 Assert.True(server.IsAuthenticated);
                 Assert.Equal(TokenImpersonationLevel.Identification, server.ImpersonationLevel);
-                Assert.Equal(true, server.IsEncrypted);
-                Assert.Equal(false, server.IsMutuallyAuthenticated);
-                Assert.Equal(true, server.IsServer);
-                Assert.Equal(true, server.IsSigned);
-                Assert.Equal(false, server.LeaveInnerStreamOpen);
+                Assert.True(server.IsEncrypted);
+                Assert.False(server.IsMutuallyAuthenticated);
+                Assert.True(server.IsServer);
+                Assert.True(server.IsSigned);
+                Assert.False(server.LeaveInnerStreamOpen);
 
                 IIdentity clientIdentity = server.RemoteIdentity;
                 Assert.Equal("NTLM", clientIdentity.AuthenticationType);
 
                 // TODO #5241: Behavior difference:
-                Assert.Equal(false, clientIdentity.IsAuthenticated);
-                // On .Net Desktop: Assert.Equal(true, clientIdentity.IsAuthenticated);
+                Assert.False(clientIdentity.IsAuthenticated);
+                // On .NET Desktop: Assert.True(clientIdentity.IsAuthenticated);
 
                 IdentityValidator.AssertHasName(clientIdentity, new SecurityIdentifier(WellKnownSidType.AnonymousSid, null).Translate(typeof(NTAccount)).Value);
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Sync_Success()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
@@ -234,7 +235,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_StreamToStream_Successive_ClientWrite_Async_Success()
         {
             byte[] recvBuf = new byte[s_sampleMsg.Length];
@@ -273,7 +274,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_ReadWriteLongMsgSync_Success()
         {
             byte[] recvBuf = new byte[s_longMsg.Length];
@@ -300,7 +301,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public async Task NegotiateStream_ReadWriteLongMsgAsync_Success()
         {
             byte[] recvBuf = new byte[s_longMsg.Length];
@@ -327,7 +328,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public void NegotiateStream_StreamToStream_Flush_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();
@@ -341,8 +342,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Relies on FlushAsync override not available in desktop")]
+        [ConditionalFact(nameof(IsNtlmInstalled))]
         public void NegotiateStream_StreamToStream_FlushAsync_Propagated()
         {
             VirtualNetwork network = new VirtualNetwork();

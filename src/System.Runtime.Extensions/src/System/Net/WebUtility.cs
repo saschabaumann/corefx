@@ -5,8 +5,6 @@
 // Don't entity encode high chars (160 to 256)
 #define ENTITY_ENCODE_HIGH_ASCII_CHARS
 
-using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -32,7 +30,8 @@ namespace System.Net
 
         #region HtmlEncode / HtmlDecode methods
 
-        public static string HtmlEncode(string value)
+        [return: NotNullIfNotNull("value")]
+        public static string? HtmlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -48,10 +47,10 @@ namespace System.Net
                 return value;
             }
 
-            // For small inputs we allocate on the stack. In most cases a buffer three 
-            // times larger the original string should be sufficient as usually not all 
+            // For small inputs we allocate on the stack. In most cases a buffer three
+            // times larger the original string should be sufficient as usually not all
             // characters need to be encoded.
-            // For larger string we rent the input string's length plus a fixed 
+            // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
             Span<char> buffer = value.Length < 80 ?
                 stackalloc char[256] :
@@ -66,7 +65,7 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlEncode(string value, TextWriter output)
+        public static void HtmlEncode(string? value, TextWriter output)
         {
             if (output == null)
             {
@@ -88,10 +87,10 @@ namespace System.Net
                 return;
             }
 
-            // For small inputs we allocate on the stack. In most cases a buffer three 
-            // times larger the original string should be sufficient as usually not all 
+            // For small inputs we allocate on the stack. In most cases a buffer three
+            // times larger the original string should be sufficient as usually not all
             // characters need to be encoded.
-            // For larger string we rent the input string's length plus a fixed 
+            // For larger string we rent the input string's length plus a fixed
             // conservative amount of chars from the ArrayPool.
             Span<char> buffer = value.Length < 80 ?
                 stackalloc char[256] :
@@ -184,7 +183,8 @@ namespace System.Net
             }
         }
 
-        public static string HtmlDecode(string value)
+        [return: NotNullIfNotNull("value")]
+        public static string? HtmlDecode(string? value)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -214,7 +214,7 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlDecode(string value, TextWriter output)
+        public static void HtmlDecode(string? value, TextWriter output)
         {
             if (output == null)
             {
@@ -405,7 +405,8 @@ namespace System.Net
         #region UrlEncode public methods
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
-        public static string UrlEncode(string value)
+        [return: NotNullIfNotNull("value")]
+        public static string? UrlEncode(string? value)
         {
             if (string.IsNullOrEmpty(value))
                 return value;
@@ -443,7 +444,7 @@ namespace System.Net
             int byteIndex = unsafeByteCount * 2;
 
             // Instead of allocating one array of length `byteCount` to store
-            // the UTF-8 encoded bytes, and then a second array of length 
+            // the UTF-8 encoded bytes, and then a second array of length
             // `3 * byteCount - 2 * unexpandedCount`
             // to store the URL-encoded UTF-8 bytes, we allocate a single array of
             // the latter and encode the data in place, saving the first allocation.
@@ -456,7 +457,8 @@ namespace System.Net
             return Encoding.UTF8.GetString(newBytes);
         }
 
-        public static byte[] UrlEncodeToBytes(byte[] value, int offset, int count)
+        [return: NotNullIfNotNull("value")]
+        public static byte[]? UrlEncodeToBytes(byte[]? value, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(value, offset, count))
             {
@@ -469,7 +471,7 @@ namespace System.Net
             // count them first
             for (int i = 0; i < count; i++)
             {
-                char ch = (char)value[offset + i];
+                char ch = (char)value![offset + i];
 
                 if (ch == ' ')
                     foundSpaces = true;
@@ -481,13 +483,13 @@ namespace System.Net
             if (!foundSpaces && unsafeCount == 0)
             {
                 var subarray = new byte[count];
-                Buffer.BlockCopy(value, offset, subarray, 0, count);
+                Buffer.BlockCopy(value!, offset, subarray, 0, count);
                 return subarray;
             }
 
             // expand not 'safe' characters into %XX, spaces to +s
             byte[] expandedBytes = new byte[count + unsafeCount * 2];
-            GetEncodedBytes(value, offset, count, expandedBytes);
+            GetEncodedBytes(value!, offset, count, expandedBytes);
             return expandedBytes;
         }
 
@@ -495,7 +497,8 @@ namespace System.Net
 
         #region UrlDecode implementation
 
-        private static string UrlDecodeInternal(string value, Encoding encoding)
+        [return: NotNullIfNotNull("value")]
+        private static string? UrlDecodeInternal(string? value, Encoding encoding)
         {
             if (string.IsNullOrEmpty(value))
             {
@@ -557,7 +560,8 @@ namespace System.Net
             return helper.GetString();
         }
 
-        private static byte[] UrlDecodeInternal(byte[] bytes, int offset, int count)
+        [return: NotNullIfNotNull("bytes")]
+        private static byte[]? UrlDecodeInternal(byte[]? bytes, int offset, int count)
         {
             if (!ValidateUrlEncodingParameters(bytes, offset, count))
             {
@@ -570,7 +574,7 @@ namespace System.Net
             for (int i = 0; i < count; i++)
             {
                 int pos = offset + i;
-                byte b = bytes[pos];
+                byte b = bytes![pos];
 
                 if (b == '+')
                 {
@@ -605,12 +609,14 @@ namespace System.Net
 
 
         [SuppressMessage("Microsoft.Design", "CA1055:UriReturnValuesShouldNotBeStrings", Justification = "Already shipped public API; code moved here as part of API consolidation")]
-        public static string UrlDecode(string encodedValue)
+        [return: NotNullIfNotNull("encodedValue")]
+        public static string? UrlDecode(string? encodedValue)
         {
             return UrlDecodeInternal(encodedValue, Encoding.UTF8);
         }
 
-        public static byte[] UrlDecodeToBytes(byte[] encodedValue, int offset, int count)
+        [return: NotNullIfNotNull("encodedValue")]
+        public static byte[]? UrlDecodeToBytes(byte[]? encodedValue, int offset, int count)
         {
             return UrlDecodeInternal(encodedValue, offset, count);
         }
@@ -719,7 +725,7 @@ namespace System.Net
             }
         }
 
-        private static bool ValidateUrlEncodingParameters(byte[] bytes, int offset, int count)
+        private static bool ValidateUrlEncodingParameters(byte[]? bytes, int offset, int count)
         {
             if (bytes == null && count == 0)
                 return false;
@@ -759,18 +765,18 @@ namespace System.Net
         // Internal struct to facilitate URL decoding -- keeps char buffer and byte buffer, allows appending of either chars or bytes
         private struct UrlDecoder
         {
-            private int _bufferSize;
+            private readonly int _bufferSize;
 
             // Accumulate characters in a special array
             private int _numChars;
-            private char[] _charBuffer;
+            private char[]? _charBuffer;
 
             // Accumulate bytes for decoding into characters in a special array
             private int _numBytes;
-            private byte[] _byteBuffer;
+            private byte[]? _byteBuffer;
 
             // Encoding to convert chars to bytes
-            private Encoding _encoding;
+            private readonly Encoding _encoding;
 
             private void FlushBytes()
             {
@@ -778,7 +784,7 @@ namespace System.Net
                 if (_charBuffer == null)
                     _charBuffer = new char[_bufferSize];
 
-                _numChars += _encoding.GetChars(_byteBuffer, 0, _numBytes, _charBuffer, _numChars);
+                _numChars += _encoding.GetChars(_byteBuffer!, 0, _numBytes, _charBuffer, _numChars);
                 _numBytes = 0;
             }
 
@@ -819,7 +825,7 @@ namespace System.Net
                     FlushBytes();
 
                 Debug.Assert(_numChars > 0);
-                return new string(_charBuffer, 0, _numChars);
+                return new string(_charBuffer!, 0, _numChars);
             }
         }
 

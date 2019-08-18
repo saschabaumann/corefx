@@ -5,16 +5,16 @@
 /*============================================================
 **
 **
-** 
+**
 **
 **
 ** Purpose: class to sort arrays
 **
-** 
+**
 ===========================================================*/
 
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Collections.Generic
 {
@@ -33,12 +33,13 @@ namespace System.Collections.Generic
             while (n >= 1)
             {
                 result++;
-                n = n / 2;
+                n /= 2;
             }
             return result;
         }
 
-        internal static void ThrowOrIgnoreBadComparer(object comparer)
+        [DoesNotReturn]
+        internal static void ThrowOrIgnoreBadComparer(object? comparer)
         {
             throw new ArgumentException(SR.Format(SR.Arg_BogusIComparer, comparer));
         }
@@ -48,7 +49,7 @@ namespace System.Collections.Generic
     {
         #region IArraySortHelper<T> Members
 
-        public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
+        public void Sort(T[] keys, int index, int length, IComparer<T>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
@@ -74,7 +75,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
             try
             {
@@ -270,11 +271,11 @@ namespace System.Collections.Generic
             Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
-            for (int i = n / 2; i >= 1; i = i - 1)
+            for (int i = n / 2; i >= 1; i--)
             {
                 DownHeap(keys, i, n, lo, comparer);
             }
-            for (int i = n; i > 1; i = i - 1)
+            for (int i = n; i > 1; i--)
             {
                 Swap(keys, lo, lo + i - 1);
                 DownHeap(keys, 1, i - 1, lo, comparer);
@@ -335,7 +336,7 @@ namespace System.Collections.Generic
 
         #region IArraySortHelper<T> Members
 
-        public void Sort(T[] keys, int index, int length, IComparer<T> comparer)
+        public void Sort(T[] keys, int index, int length, IComparer<T>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
@@ -361,7 +362,7 @@ namespace System.Collections.Generic
             }
         }
 
-        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
+        public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
             Debug.Assert(array != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
@@ -561,11 +562,11 @@ namespace System.Collections.Generic
             Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
-            for (int i = n / 2; i >= 1; i = i - 1)
+            for (int i = n / 2; i >= 1; i--)
             {
                 DownHeap(keys, i, n, lo);
             }
-            for (int i = n; i > 1; i = i - 1)
+            for (int i = n; i > 1; i--)
             {
                 Swap(keys, lo, lo + i - 1);
                 DownHeap(keys, 1, i - 1, lo);
@@ -624,7 +625,7 @@ namespace System.Collections.Generic
 
     internal partial class ArraySortHelper<TKey, TValue>
     {
-        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
+        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");  // Precondition on interface method
             Debug.Assert(values != null, "Check the arguments in the caller!");
@@ -669,7 +670,7 @@ namespace System.Collections.Generic
 
                     TValue value = values[a];
                     values[a] = values[b];
-                    values[b] = value;                    
+                    values[b] = value;
                 }
             }
         }
@@ -684,7 +685,7 @@ namespace System.Collections.Generic
 
                 TValue v = values[i];
                 values[i] = values[j];
-                values[j] = v;                
+                values[j] = v;
             }
         }
 
@@ -800,11 +801,11 @@ namespace System.Collections.Generic
             Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
-            for (int i = n / 2; i >= 1; i = i - 1)
+            for (int i = n / 2; i >= 1; i--)
             {
                 DownHeap(keys, values, i, n, lo, comparer);
             }
-            for (int i = n; i > 1; i = i - 1)
+            for (int i = n; i > 1; i--)
             {
                 Swap(keys, values, lo, lo + i - 1);
                 DownHeap(keys, values, 1, i - 1, lo, comparer);
@@ -871,7 +872,7 @@ namespace System.Collections.Generic
     internal partial class GenericArraySortHelper<TKey, TValue>
         where TKey : IComparable<TKey>
     {
-        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey> comparer)
+        public void Sort(TKey[] keys, TValue[] values, int index, int length, IComparer<TKey>? comparer)
         {
             Debug.Assert(keys != null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (keys.Length - index >= length), "Check the arguments in the caller!");
@@ -911,7 +912,7 @@ namespace System.Collections.Generic
 
                     TValue value = values[a];
                     values[a] = values[b];
-                    values[b] = value;                    
+                    values[b] = value;
                 }
             }
         }
@@ -1046,11 +1047,11 @@ namespace System.Collections.Generic
             Debug.Assert(hi < keys.Length);
 
             int n = hi - lo + 1;
-            for (int i = n / 2; i >= 1; i = i - 1)
+            for (int i = n / 2; i >= 1; i--)
             {
                 DownHeap(keys, values, i, n, lo);
             }
-            for (int i = n; i > 1; i = i - 1)
+            for (int i = n; i > 1; i--)
             {
                 Swap(keys, values, lo, lo + i - 1);
                 DownHeap(keys, values, 1, i - 1, lo);

@@ -8,7 +8,6 @@ using System.Collections.Specialized;
 using System.Threading;
 using System.Diagnostics;
 using System.Security;
-using System.Security.Permissions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.Caching
@@ -18,15 +17,15 @@ namespace System.Runtime.Caching
         private const int INSERT_BLOCK_WAIT = 10000;
         private const int MAX_COUNT = int.MaxValue / 2;
 
-        private Hashtable _entries;
-        private object _entriesLock;
-        private CacheExpires _expires;
-        private CacheUsage _usage;
+        private readonly Hashtable _entries;
+        private readonly object _entriesLock;
+        private readonly CacheExpires _expires;
+        private readonly CacheUsage _usage;
         private int _disposed;
         private ManualResetEvent _insertBlock;
         private volatile bool _useInsertBlock;
-        private MemoryCache _cache;
-        private PerfCounters _perfCounters;
+        private readonly MemoryCache _cache;
+        private readonly PerfCounters _perfCounters;
 
         internal MemoryCacheStore(MemoryCache cache, PerfCounters perfCounters)
         {
@@ -39,7 +38,7 @@ namespace System.Runtime.Caching
             InitDisposableMembers();
         }
 
-        // private members        
+        // private members
 
         private void AddToCache(MemoryCacheEntry entry)
         {
@@ -103,7 +102,7 @@ namespace System.Runtime.Caching
                     _usage.Remove(entry);
                 }
 
-                Dbg.Assert(entry.State == EntryState.RemovingFromCache, "entry.State = EntryState.RemovingFromCache");
+                Debug.Assert(entry.State == EntryState.RemovingFromCache, "entry.State = EntryState.RemovingFromCache");
 
                 entry.State = EntryState.RemovedFromCache;
                 if (!delayRelease)
@@ -204,7 +203,7 @@ namespace System.Runtime.Caching
             // update outside of lock
             UpdateExpAndUsage(existingEntry);
 
-            // Call Release after the new entry has been completely added so 
+            // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
             if (toBeReleasedEntry != null)
             {
@@ -276,7 +275,7 @@ namespace System.Runtime.Caching
 
                 // MemoryCacheStatistics has been disposed, and therefore nobody should be using
                 // _insertBlock except for potential threads in WaitInsertBlock (which won't care if we call Close).
-                Dbg.Assert(_useInsertBlock == false, "_useInsertBlock == false");
+                Debug.Assert(_useInsertBlock == false, "_useInsertBlock == false");
                 _insertBlock.Close();
 
                 // Don't need to call GC.SuppressFinalize(this) for sealed types without finalizers.
@@ -363,7 +362,7 @@ namespace System.Runtime.Caching
                 AddToCache(entry);
             }
 
-            // Call Release after the new entry has been completely added so 
+            // Call Release after the new entry has been completely added so
             // that the CacheItemRemovedCallback can take a dependency on the newly inserted item.
             if (existingEntry != null)
             {
@@ -373,7 +372,7 @@ namespace System.Runtime.Caching
 
         internal long TrimInternal(int percent)
         {
-            Dbg.Assert(percent <= 100, "percent <= 100");
+            Debug.Assert(percent <= 100, "percent <= 100");
 
             int count = Count;
             int toTrim = 0;

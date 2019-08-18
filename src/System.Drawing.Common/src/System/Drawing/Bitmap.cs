@@ -12,9 +12,10 @@ using System.Runtime.Serialization;
 namespace System.Drawing
 {
     [Serializable]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public sealed partial class Bitmap : Image
     {
-        private static Color s_defaultTransparentColor = Color.LightGray;
+        private static readonly Color s_defaultTransparentColor = Color.LightGray;
 
         private Bitmap() { }
 
@@ -70,7 +71,7 @@ namespace System.Drawing
         public Bitmap(int width, int height, int stride, PixelFormat format, IntPtr scan0)
         {
             IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromScan0(width, height, stride, unchecked((int)format), new HandleRef(null, scan0), out bitmap);
+            int status = Gdip.GdipCreateBitmapFromScan0(width, height, stride, unchecked((int)format), scan0, out bitmap);
             Gdip.CheckStatus(status);
 
             SetNativeImage(bitmap);
@@ -79,7 +80,7 @@ namespace System.Drawing
         public Bitmap(int width, int height, PixelFormat format)
         {
             IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromScan0(width, height, 0, unchecked((int)format), NativeMethods.NullHandleRef, out bitmap);
+            int status = Gdip.GdipCreateBitmapFromScan0(width, height, 0, unchecked((int)format), IntPtr.Zero, out bitmap);
             Gdip.CheckStatus(status);
 
             SetNativeImage(bitmap);
@@ -108,30 +109,22 @@ namespace System.Drawing
 
         public static Bitmap FromHicon(IntPtr hicon)
         {
-            IntPtr bitmap = IntPtr.Zero;
-            int status = Gdip.GdipCreateBitmapFromHICON(new HandleRef(null, hicon), out bitmap);
-            Gdip.CheckStatus(status);
-
+            Gdip.CheckStatus(Gdip.GdipCreateBitmapFromHICON(hicon, out IntPtr bitmap));
             return new Bitmap(bitmap);
         }
 
         public static Bitmap FromResource(IntPtr hinstance, string bitmapName)
         {
-            IntPtr bitmap;
             IntPtr name = Marshal.StringToHGlobalUni(bitmapName);
             try
             {
-                int status = Gdip.GdipCreateBitmapFromResource(new HandleRef(null, hinstance),
-                                                                  new HandleRef(null, name),
-                                                                  out bitmap);
-                Gdip.CheckStatus(status);
+                Gdip.CheckStatus(Gdip.GdipCreateBitmapFromResource(hinstance, name, out IntPtr bitmap));
+                return new Bitmap(bitmap);
             }
             finally
             {
                 Marshal.FreeHGlobal(name);
             }
-
-            return new Bitmap(bitmap);
         }
 
         [EditorBrowsable(EditorBrowsableState.Advanced)]
@@ -145,7 +138,7 @@ namespace System.Drawing
                                                              ColorTranslator.ToWin32(background));
             if (status == 2 /* invalid parameter*/ && (Width >= short.MaxValue || Height >= short.MaxValue))
             {
-                throw new ArgumentException(SR.Format(SR.GdiplusInvalidSize));
+                throw new ArgumentException(SR.GdiplusInvalidSize);
             }
 
             Gdip.CheckStatus(status);
@@ -208,7 +201,7 @@ namespace System.Drawing
         {
             if (RawFormat.Guid == ImageFormat.Icon.Guid)
             {
-                throw new InvalidOperationException(SR.Format(SR.CantMakeIconTransparent));
+                throw new InvalidOperationException(SR.CantMakeIconTransparent);
             }
 
             Size size = Size;
@@ -266,12 +259,12 @@ namespace System.Drawing
         {
             if (x < 0 || x >= Width)
             {
-                throw new ArgumentOutOfRangeException(nameof(x), SR.Format(SR.ValidRangeX));
+                throw new ArgumentOutOfRangeException(nameof(x), SR.ValidRangeX);
             }
 
             if (y < 0 || y >= Height)
             {
-                throw new ArgumentOutOfRangeException(nameof(y), SR.Format(SR.ValidRangeY));
+                throw new ArgumentOutOfRangeException(nameof(y), SR.ValidRangeY);
             }
 
             int color = 0;
@@ -285,17 +278,17 @@ namespace System.Drawing
         {
             if ((PixelFormat & PixelFormat.Indexed) != 0)
             {
-                throw new InvalidOperationException(SR.Format(SR.GdiplusCannotSetPixelFromIndexedPixelFormat));
+                throw new InvalidOperationException(SR.GdiplusCannotSetPixelFromIndexedPixelFormat);
             }
 
             if (x < 0 || x >= Width)
             {
-                throw new ArgumentOutOfRangeException(nameof(x), SR.Format(SR.ValidRangeX));
+                throw new ArgumentOutOfRangeException(nameof(x), SR.ValidRangeX);
             }
 
             if (y < 0 || y >= Height)
             {
-                throw new ArgumentOutOfRangeException(nameof(y), SR.Format(SR.ValidRangeY));
+                throw new ArgumentOutOfRangeException(nameof(y), SR.ValidRangeY);
             }
 
             int status = Gdip.GdipBitmapSetPixel(new HandleRef(this, nativeImage), x, y, color.ToArgb());

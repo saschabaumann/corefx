@@ -12,6 +12,7 @@ namespace System.ComponentModel.Tests
     public class LicenseExceptionTests
     {
         [Theory]
+        [InlineData(null)]
         [InlineData(typeof(int))]
         public void Ctor_Type(Type type)
         {
@@ -22,8 +23,14 @@ namespace System.ComponentModel.Tests
             Assert.NotEmpty(exception.Message);
         }
 
+        public static IEnumerable<object[]> Ctor_Type_Object_TestData()
+        {
+            yield return new object[] { null, null };
+            yield return new object[] { typeof(int), new object() };
+        }
+
         [Theory]
-        [InlineData(typeof(int), "instance")]
+        [MemberData(nameof(Ctor_Type_Object_TestData))]
         public void Ctor_Type_Object(Type type, object instance)
         {
             var exception = new LicenseException(type, instance);
@@ -50,29 +57,21 @@ namespace System.ComponentModel.Tests
             Assert.Equal(message, exception.Message);
         }
 
-        [Theory]
-        [MemberData(nameof(Ctor_Type_Object_String_TestData))]
-        public void Ctor_Type_Object_String_Exception(Type type, object instance, string message)
+        public static IEnumerable<object[]> Ctor_Type_Object_String_Exception_TestData()
         {
-            var innerException = new DivideByZeroException();
+            yield return new object[] { null, null, "message", null };
+            yield return new object[] { typeof(LicenseException), new object(), "message", new DivideByZeroException() };
+        }
+
+        [Theory]
+        [MemberData(nameof(Ctor_Type_Object_String_Exception_TestData))]
+        public void Ctor_Type_Object_String_Exception(Type type, object instance, string message, Exception innerException)
+        {
             var exception = new LicenseException(type, instance, message, innerException);
             Assert.Same(innerException, exception.InnerException);
             Assert.Equal(-2146232063, exception.HResult);
             Assert.Equal(type, exception.LicensedType);
             Assert.Equal(message, exception.Message);
-        }
-
-        [Fact]
-        public void Ctor_NullType_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new LicenseException(null));
-            Assert.Throws<NullReferenceException>(() => new LicenseException(null, new object()));
-        }
-
-        [Fact]
-        public void Ctor_NullInstance_ThrowsNullReferenceException()
-        {
-            Assert.Throws<NullReferenceException>(() => new LicenseException(typeof(int), null));
         }
 
         [Fact]

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Buffers;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
@@ -14,8 +13,6 @@ namespace System.Security.Cryptography
     internal static class PasswordBasedEncryption
     {
         internal const int IterationLimit = 600000;
-
-        private static ArrayPool<byte> ArrayPool => ArrayPool<byte>.Shared;
 
         private static CryptographicException AlgorithmKdfRequiresChars(string algId)
         {
@@ -178,7 +175,7 @@ namespace System.Security.Cryptography
 
                         if (byteCount > buf.Length)
                         {
-                            rented = ArrayPool.Rent(byteCount);
+                            rented = CryptoPool.Rent(byteCount);
                             buf = rented.AsSpan(0, byteCount);
                         }
                         else
@@ -213,7 +210,7 @@ namespace System.Security.Cryptography
 
                             if (rented != null)
                             {
-                                ArrayPool.Return(rented);
+                                CryptoPool.Return(rented, clearSize: 0);
                             }
                         }
                     }
@@ -306,7 +303,7 @@ namespace System.Security.Cryptography
             byte[] derivedKey;
             byte[] iv = cipher.IV;
 
-            byte[] sourceRent = ArrayPool.Rent(source.Length);
+            byte[] sourceRent = CryptoPool.Rent(source.Length);
             int keySizeBytes = cipher.KeySize / 8;
             int iterationCount = pbeParameters.IterationCount;
             HashAlgorithmName prf = pbeParameters.HashAlgorithm;
@@ -418,8 +415,7 @@ namespace System.Security.Cryptography
                         }
                         finally
                         {
-                            CryptographicOperations.ZeroMemory(sourceRent.AsSpan(0, source.Length));
-                            ArrayPool.Return(sourceRent);
+                            CryptoPool.Return(sourceRent, source.Length);
                         }
                     }
                 }
@@ -449,7 +445,7 @@ namespace System.Security.Cryptography
 
                 if (byteCount > buf.Length)
                 {
-                    rented = ArrayPool.Rent(byteCount);
+                    rented = CryptoPool.Rent(byteCount);
                     buf = rented.AsSpan(0, byteCount);
                 }
                 else
@@ -468,11 +464,21 @@ namespace System.Security.Cryptography
                     effectivePasswordBytes = buf;
                 }
 
-                return Pbes2Decrypt(
-                    algorithmParameters,
-                    effectivePasswordBytes,
-                    encryptedData,
-                    destination);
+                try
+                {
+                    return Pbes2Decrypt(
+                        algorithmParameters,
+                        effectivePasswordBytes,
+                        encryptedData,
+                        destination);
+                }
+                finally
+                {
+                    if (rented != null)
+                    {
+                        CryptoPool.Return(rented, buf.Length);
+                    }
+                }
             }
         }
 
@@ -695,28 +701,17 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            HashAlgorithmName prf;
-
-            switch (pbkdf2Params.Prf.Algorithm.Value)
+            HashAlgorithmName prf = pbkdf2Params.Prf.Algorithm.Value switch
             {
-                case Oids.HmacWithSha1:
-                    prf = HashAlgorithmName.SHA1;
-                    break;
-                case Oids.HmacWithSha256:
-                    prf = HashAlgorithmName.SHA256;
-                    break;
-                case Oids.HmacWithSha384:
-                    prf = HashAlgorithmName.SHA384;
-                    break;
-                case Oids.HmacWithSha512:
-                    prf = HashAlgorithmName.SHA512;
-                    break;
-                default:
-                    throw new CryptographicException(
+                Oids.HmacWithSha1 => HashAlgorithmName.SHA1,
+                Oids.HmacWithSha256 => HashAlgorithmName.SHA256,
+                Oids.HmacWithSha384 => HashAlgorithmName.SHA384,
+                Oids.HmacWithSha512 => HashAlgorithmName.SHA512,
+                _ => throw new CryptographicException(
                         SR.Format(
                             SR.Cryptography_UnknownAlgorithmIdentifier,
-                            pbkdf2Params.Prf.Algorithm));
-            }
+                            pbkdf2Params.Prf.Algorithm)),
+            };
 
             // All of the PRFs that we know about have NULL parameters, so check that now that we know
             // it's not just that we don't know the algorithm.
@@ -882,8 +877,8 @@ namespace System.Security.Cryptography
             // When we define a Span-based decryption API this should be changed to use it.
             byte[] tmpKey = new byte[key.Length];
             byte[] tmpIv = new byte[iv.Length];
-            byte[] rentedEncryptedData = ArrayPool.Rent(encryptedData.Length);
-            byte[] rentedDestination = ArrayPool.Rent(destination.Length);
+            byte[] rentedEncryptedData = CryptoPool.Rent(encryptedData.Length);
+            byte[] rentedDestination = CryptoPool.Rent(destination.Length);
 
             // Keep all the arrays pinned so they can be correctly cleared
             fixed (byte* tmpKeyPtr = tmpKey)
@@ -927,11 +922,9 @@ namespace System.Security.Cryptography
                 {
                     CryptographicOperations.ZeroMemory(tmpKey);
                     CryptographicOperations.ZeroMemory(tmpIv);
-                    CryptographicOperations.ZeroMemory(rentedEncryptedData.AsSpan(0, encryptedData.Length));
-                    CryptographicOperations.ZeroMemory(rentedDestination.AsSpan(0, destination.Length));
 
-                    ArrayPool.Return(rentedEncryptedData);
-                    ArrayPool.Return(rentedDestination);
+                    CryptoPool.Return(rentedEncryptedData, encryptedData.Length);
+                    CryptoPool.Return(rentedDestination, destination.Length);
                 }
             }
         }

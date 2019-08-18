@@ -10,8 +10,14 @@ namespace System.Diagnostics
     {
         private static readonly bool s_shouldWriteToStdErr = Environment.GetEnvironmentVariable("COMPlus_DebugWriteToStdErr") == "1";
 
-        public virtual void ShowDialog(string stackTrace, string message, string detailMessage, string errorSource)
+        public static void FailCore(string stackTrace, string? message, string? detailMessage, string errorSource)
         {
+            if (s_FailCore != null)
+            {
+                s_FailCore(stackTrace, message, detailMessage, errorSource);
+                return;
+            }
+
             if (Debugger.IsAttached)
             {
                 Debugger.Break();
@@ -21,25 +27,19 @@ namespace System.Diagnostics
                 // In Core, we do not show a dialog.
                 // Fail in order to avoid anyone catching an exception and masking
                 // an assert failure.
-                DebugAssertException ex;
-                if (message == string.Empty) 
-                {
-                    ex = new DebugAssertException(stackTrace);
-                }
-                else if (detailMessage == string.Empty) 
-                {
-                    ex = new DebugAssertException(message, stackTrace);
-                }
-                else
-                {
-                    ex = new DebugAssertException(message, detailMessage, stackTrace);
-                }
+                DebugAssertException ex = new DebugAssertException(message, detailMessage, stackTrace);
                 Environment.FailFast(ex.Message, ex, errorSource);
             }
         }
 
-        private static void WriteCore(string message)
+        public static void WriteCore(string message)
         {
+            if (s_WriteCore != null)
+            {
+                s_WriteCore(message);
+                return;
+            }
+
             WriteToDebugger(message);
 
             if (s_shouldWriteToStdErr)

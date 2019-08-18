@@ -225,7 +225,7 @@ namespace System.Data.Odbc
             get
             {
                 string parameterName = _parameterName;
-                return ((null != parameterName) ? parameterName : ADP.StrEmpty);
+                return ((null != parameterName) ? parameterName : string.Empty);
             }
             set
             {
@@ -344,7 +344,7 @@ namespace System.Data.Odbc
                         }
                         else if (value is string)
                         {
-                            cch = ((String)value).Length - offset;
+                            cch = ((string)value).Length - offset;
 
                             if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                             {
@@ -396,7 +396,7 @@ namespace System.Data.Odbc
                             }
                         }
 #if DEBUG
-                        else { Debug.Assert(false, "not expecting this"); }
+                        else { Debug.Fail("not expecting this"); }
 #endif
                         // Note: ColumnSize should never be 0,
                         // this represents the size of the column on the backend.
@@ -407,7 +407,7 @@ namespace System.Data.Odbc
                     }
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetColumnSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), $"GetColumnSize: cch = {cch} out of range, _internalShouldSerializeSize = {_internalShouldSerializeSize}, _internalSize = {_internalSize}");
             return cch;
         }
 
@@ -452,7 +452,7 @@ namespace System.Data.Odbc
                     cch *= 2;
                 }
             }
-            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), string.Format((IFormatProvider)null, "GetValueSize: cch = {0} out of range, _internalShouldSerializeSize = {1}, _internalSize = {2}", cch, _internalShouldSerializeSize, _internalSize));
+            Debug.Assert((0 <= cch) && (cch < 0x3fffffff), $"GetValueSize: cch = {cch} out of range, _internalShouldSerializeSize = {_internalShouldSerializeSize}, _internalSize = {_internalSize}");
             return cch;
         }
 
@@ -490,7 +490,7 @@ namespace System.Data.Odbc
                         }
                         else if (value is string)
                         {
-                            ccb = (((String)value).Length - offset) * 2 + 2;
+                            ccb = (((string)value).Length - offset) * 2 + 2;
                         }
                         else if (value is char[])
                         {
@@ -501,7 +501,7 @@ namespace System.Data.Odbc
                             ccb = ((byte[])value).Length - offset;
                         }
 #if DEBUG
-                        else { Debug.Assert(false, "not expecting this"); }
+                        else { Debug.Fail("not expecting this"); }
 #endif
                         if ((0 != (ParameterDirection.Output & _internalDirection)) && (0x3fffffff <= _internalSize))
                         {
@@ -512,10 +512,10 @@ namespace System.Data.Odbc
                     }
                     else if (ODBC32.SQL_C.WCHAR == _bindtype._sql_c)
                     {
-                        if ((value is string) && (ccb < ((String)value).Length) && (_bindtype == _originalbindtype))
+                        if ((value is string) && (ccb < ((string)value).Length) && (_bindtype == _originalbindtype))
                         {
                             // silently truncate ... MDAC 84408 ... do not truncate upgraded values ... MDAC 84706
-                            ccb = ((String)value).Length;
+                            ccb = ((string)value).Length;
                         }
                         ccb = (ccb * 2) + 2; // allow for null termination
                     }
@@ -679,7 +679,7 @@ namespace System.Data.Odbc
                         _bindtype = TypeMap._VarChar;
                         if ((null != value) && !Convert.IsDBNull(value))
                         {
-                            value = ((Decimal)value).ToString(CultureInfo.CurrentCulture);
+                            value = ((decimal)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
                             offset = 0;
                         }
@@ -693,7 +693,7 @@ namespace System.Data.Odbc
                         _bindtype = TypeMap._VarChar;
                         if ((null != value) && !Convert.IsDBNull(value))
                         {
-                            value = ((Int64)value).ToString(CultureInfo.CurrentCulture);
+                            value = ((long)value).ToString(CultureInfo.CurrentCulture);
                             size = ((string)value).Length;
                             offset = 0;
                         }
@@ -767,7 +767,7 @@ namespace System.Data.Odbc
                     }
                     break;
                 case ODBC32.SQL_TYPE.WVARCHAR:
-                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters. 
+                    // Max length of WVARCHAR (NVARCHAR) is 4,000 of unicode characters.
                     if (size > 4000)
                     {
                         _bindtype = TypeMap._NText; // will change to WLONGVARCHAR
@@ -997,7 +997,7 @@ namespace System.Data.Odbc
                             catch (Exception e)
                             {
                                 // Don't know which exception to expect from ChangeType so we filter out the serious ones
-                                // 
+                                //
                                 if (!ADP.IsCatchableExceptionType(e))
                                 {
                                     throw;
@@ -1101,7 +1101,7 @@ namespace System.Data.Odbc
                 case ParameterDirection.InputOutput:
                     return ODBC32.SQL_PARAM.INPUT_OUTPUT;
                 default:
-                    Debug.Assert(false, "Unexpected Direction Property on Parameter");
+                    Debug.Fail("Unexpected Direction Property on Parameter");
                     return ODBC32.SQL_PARAM.INPUT;
             }
         }

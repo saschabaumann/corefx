@@ -6,7 +6,6 @@ extern alias System_Runtime_Extensions;
 
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -26,10 +25,10 @@ namespace System.IO
 
         private const int DefaultBufferSize = 16384;  // = 0x4000 = 16 KBytes.
 
-        private static ConditionalWeakTable<object, Stream> s_winRtToNetFxAdapterMap
+        private static readonly ConditionalWeakTable<object, Stream> s_winRtToNetFxAdapterMap
                  = new ConditionalWeakTable<object, Stream>();
 
-        private static ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
+        private static readonly ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter> s_netFxToWinRtAdapterMap
                  = new ConditionalWeakTable<Stream, NetFxToWinRtStreamAdapter>();
 
         #endregion Constants and static Fields
@@ -54,12 +53,12 @@ namespace System.IO
             if (valueMayBeWrappedInBufferedStream)
             {
                 BufferedStream bufferedValueInMap = valueInMap as BufferedStream;
-                Debug.Assert(Object.ReferenceEquals(value, valueInMap)
-                                || (bufferedValueInMap != null && Object.ReferenceEquals(value, bufferedValueInMap.UnderlyingStream)));
+                Debug.Assert(object.ReferenceEquals(value, valueInMap)
+                                || (bufferedValueInMap != null && object.ReferenceEquals(value, bufferedValueInMap.UnderlyingStream)));
             }
             else
             {
-                Debug.Assert(Object.ReferenceEquals(value, valueInMap));
+                Debug.Assert(object.ReferenceEquals(value, valueInMap));
             }
         }
 #endif  // DEBUG
@@ -139,8 +138,6 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_WinRtAdapterBufferSizeMayNotBeNegative);
 
             Debug.Assert(!string.IsNullOrWhiteSpace(invokedMethodName));
-            Contract.Ensures(Contract.Result<Stream>() != null);
-            Contract.EndContractBlock();
 
             // If the WinRT stream is actually a wrapped managed stream, we will unwrap it and return the original.
             // In that case we do not need to put the wrapper into the map.
@@ -207,9 +204,6 @@ namespace System.IO
             Debug.Assert(bufferSize >= 0);
             Debug.Assert(!string.IsNullOrWhiteSpace(invokedMethodName));
 
-            Contract.Ensures(Contract.Result<Stream>() != null);
-            Contract.EndContractBlock();
-
             // Get the adapter for this windowsRuntimeStream again (it may have been created concurrently).
             // If none exists yet, create a new one:
             Stream adapter = (bufferSize == 0)
@@ -246,9 +240,6 @@ namespace System.IO
             if (!stream.CanRead)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotReadableToInputStream);
 
-            Contract.Ensures(Contract.Result<IInputStream>() != null);
-            Contract.EndContractBlock();
-
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IInputStream winRtStream = adapter as IInputStream;
@@ -266,9 +257,6 @@ namespace System.IO
 
             if (!stream.CanWrite)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotWritableToOutputStream);
-
-            Contract.Ensures(Contract.Result<IOutputStream>() != null);
-            Contract.EndContractBlock();
 
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
@@ -288,9 +276,6 @@ namespace System.IO
             if (!stream.CanSeek)
                 throw new NotSupportedException(SR.NotSupported_CannotConvertNotSeekableToRandomAccessStream);
 
-            Contract.Ensures(Contract.Result<IRandomAccessStream>() != null);
-            Contract.EndContractBlock();
-
             object adapter = AsWindowsRuntimeStreamInternal(stream);
 
             IRandomAccessStream winRtStream = adapter as IRandomAccessStream;
@@ -302,9 +287,6 @@ namespace System.IO
 
         private static object AsWindowsRuntimeStreamInternal(Stream stream)
         {
-            Contract.Ensures(Contract.Result<Object>() != null);
-            Contract.EndContractBlock();
-
             // Check to see if the managed stream is actually a wrapper of a WinRT stream:
             // (This can be either an adapter directly, or an adapter wrapped in a BufferedStream.)
             WinRtToNetFxStreamAdapter sAdptr = stream as WinRtToNetFxStreamAdapter;
@@ -319,7 +301,7 @@ namespace System.IO
             // In that case we do not need to put the wrapper into the map.
             if (sAdptr != null)
             {
-                object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<Object>();
+                object wrappedWinRtStream = sAdptr.GetWindowsRuntimeStream<object>();
                 if (wrappedWinRtStream == null)
                     throw new ObjectDisposedException(nameof(stream), SR.ObjectDisposed_CannotPerformOperation);
 
@@ -349,8 +331,6 @@ namespace System.IO
         private static NetFxToWinRtStreamAdapter AsWindowsRuntimeStreamInternalFactoryHelper(Stream stream)
         {
             Debug.Assert(stream != null);
-            Contract.Ensures(Contract.Result<NetFxToWinRtStreamAdapter>() != null);
-            Contract.EndContractBlock();
 
             // Get the adapter for managed stream again (it may have been created concurrently).
             // If none exists yet, create a new one:

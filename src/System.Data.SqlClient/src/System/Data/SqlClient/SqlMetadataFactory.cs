@@ -13,11 +13,8 @@ namespace System.Data.SqlClient
 {
     internal sealed class SqlMetaDataFactory : DbMetaDataFactory
     {
-
         private const string _serverVersionNormalized90 = "09.00.0000";
-        private const string _serverVersionNormalized90782 = "09.00.0782";
         private const string _serverVersionNormalized10 = "10.00.0000";
-
 
         public SqlMetaDataFactory(Stream XMLStream,
                                     string serverVersion,
@@ -150,7 +147,7 @@ namespace System.Data.SqlClient
                             byte[] byteArrayValue = (byte[])values[publicKeyIndex];
                             foreach (byte b in byteArrayValue)
                             {
-                                resultString.Append(string.Format((IFormatProvider)null, "{0,-2:x2}", b));
+                                resultString.Append(string.Format("{0,-2:x2}", b));
                             }
                             nameString.Append(resultString.ToString());
                         }

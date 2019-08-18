@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -145,9 +145,18 @@ namespace System.Linq
 
         internal OrderedEnumerable(IEnumerable<TElement> source, Func<TElement, TKey> keySelector, IComparer<TKey> comparer, bool descending, OrderedEnumerable<TElement> parent)
         {
-            _source = source ?? throw Error.ArgumentNull(nameof(source));
+            if (source is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
+            }
+            if (keySelector is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keySelector);
+            }
+
+            _source = source;
             _parent = parent;
-            _keySelector = keySelector ?? throw Error.ArgumentNull(nameof(keySelector));
+            _keySelector = keySelector;
             _comparer = comparer ?? Comparer<TKey>.Default;
             _descending = descending;
         }
@@ -348,7 +357,7 @@ namespace System.Linq
             return (_descending != (c > 0)) ? 1 : -1;
         }
 
-        
+
         private int CompareKeys(int index1, int index2) => index1 == index2 ? 0 : CompareAnyKeys(index1, index2);
 
         protected override void QuickSort(int[] keys, int lo, int hi) =>

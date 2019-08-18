@@ -6,7 +6,7 @@ using System.Diagnostics;
 
 namespace System.Net.Http.Headers
 {
-    // Don't derive from BaseHeaderParser since parsing is delegated to DateTimeOffset.TryParseExact() 
+    // Don't derive from BaseHeaderParser since parsing is delegated to DateTimeOffset.TryParseExact()
     // which will remove leading, trailing, and whitespace in the middle of the string.
     internal class DateHeaderParser : HttpHeaderParser
     {
@@ -34,10 +34,10 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            string dateString = value;
+            ReadOnlySpan<char> dateString = value;
             if (index > 0)
             {
-                dateString = value.Substring(index);
+                dateString = value.AsSpan(index);
             }
 
             DateTimeOffset date;

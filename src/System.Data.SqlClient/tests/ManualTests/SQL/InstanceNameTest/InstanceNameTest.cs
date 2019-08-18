@@ -15,7 +15,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
 {
     public static class InstanceNameTest
     {
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility),nameof(DataTestUtility.AreConnStringsSetup))]
         public static void ConnectToSQLWithInstanceNameTest()
         {
             SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
@@ -29,7 +29,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 proceed = !string.IsNullOrWhiteSpace(hostname) && IsBrowserAlive(hostname);
             }
 
-            if(proceed)
+            if (proceed)
             {
                 using (SqlConnection connection = new SqlConnection(builder.ConnectionString))
                 {

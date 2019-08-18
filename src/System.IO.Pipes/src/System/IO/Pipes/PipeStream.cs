@@ -27,7 +27,7 @@ namespace System.IO.Pipes
         private PipeTransmissionMode _readMode;
         private PipeTransmissionMode _transmissionMode;
         private PipeDirection _pipeDirection;
-        private int _outBufferSize;
+        private uint _outBufferSize;
         private PipeState _state;
 
         protected PipeStream(PipeDirection direction, int bufferSize)
@@ -41,7 +41,7 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(bufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Init(direction, PipeTransmissionMode.Byte, bufferSize);
+            Init(direction, PipeTransmissionMode.Byte, (uint)bufferSize);
         }
 
         protected PipeStream(PipeDirection direction, PipeTransmissionMode transmissionMode, int outBufferSize)
@@ -59,10 +59,10 @@ namespace System.IO.Pipes
                 throw new ArgumentOutOfRangeException(nameof(outBufferSize), SR.ArgumentOutOfRange_NeedNonNegNum);
             }
 
-            Init(direction, transmissionMode, outBufferSize);
+            Init(direction, transmissionMode, (uint)outBufferSize);
         }
 
-        private void Init(PipeDirection direction, PipeTransmissionMode transmissionMode, int outBufferSize)
+        private void Init(PipeDirection direction, PipeTransmissionMode transmissionMode, uint outBufferSize)
         {
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(transmissionMode >= PipeTransmissionMode.Byte && transmissionMode <= PipeTransmissionMode.Message, "transmissionMode is out of range");
@@ -168,7 +168,7 @@ namespace System.IO.Pipes
                 return s_zeroTask;
             }
 
-            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken);
+            return ReadAsyncCore(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
         }
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
@@ -196,7 +196,7 @@ namespace System.IO.Pipes
                 return new ValueTask<int>(0);
             }
 
-            return new ValueTask<int>(ReadAsyncCore(buffer, cancellationToken));
+            return ReadAsyncCore(buffer, cancellationToken);
         }
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
@@ -354,7 +354,7 @@ namespace System.IO.Pipes
         }
 
         // Does nothing on PipeStreams.  We cannot call Interop.FlushFileBuffers here because we can deadlock
-        // if the other end of the pipe is no longer interested in reading from the pipe. 
+        // if the other end of the pipe is no longer interested in reading from the pipe.
         public override void Flush()
         {
             CheckWriteOperations();
@@ -381,8 +381,8 @@ namespace System.IO.Pipes
         {
             try
             {
-                // Nothing will be done differently based on whether we are 
-                // disposing vs. finalizing.  
+                // Nothing will be done differently based on whether we are
+                // disposing vs. finalizing.
                 if (_handle != null && !_handle.IsClosed)
                 {
                     _handle.Dispose();
@@ -400,7 +400,7 @@ namespace System.IO.Pipes
 
         // ********************** Public Properties *********************** //
 
-        // APIs use coarser definition of connected, but these map to internal 
+        // APIs use coarser definition of connected, but these map to internal
         // Connected/Disconnected states. Note that setter is protected; only
         // intended to be called by custom PipeStream concrete children
         public bool IsConnected
@@ -421,7 +421,7 @@ namespace System.IO.Pipes
         }
 
         // Set by the most recent call to Read or EndRead.  Will be false if there are more buffer in the
-        // message, otherwise it is set to true. 
+        // message, otherwise it is set to true.
         public bool IsMessageComplete
         {
             [SuppressMessage("Microsoft.Security", "CA2122:DoNotIndirectlyExposeMethodsWithLinkDemands", Justification = "Security model of pipes: demand at creation but no subsequent demands")]
@@ -552,7 +552,7 @@ namespace System.IO.Pipes
             throw Error.GetSeekNotSupported();
         }
 
-        // anonymous pipe ends and named pipe server can get/set properties when broken 
+        // anonymous pipe ends and named pipe server can get/set properties when broken
         // or connected. Named client overrides
         protected internal virtual void CheckPipePropertyOperations()
         {

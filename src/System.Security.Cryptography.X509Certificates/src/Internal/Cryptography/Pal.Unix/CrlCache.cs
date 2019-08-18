@@ -5,6 +5,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
 using System.Security.Cryptography.X509Certificates;
@@ -15,10 +16,23 @@ namespace Internal.Cryptography.Pal
 {
     internal static class CrlCache
     {
+        private static readonly string s_crlDir =
+            PersistedFiles.GetUserFeatureDirectory(
+                X509Persistence.CryptographyFeatureName,
+                X509Persistence.CrlsSubFeatureName);
+
+        private static readonly string s_ocspDir =
+            PersistedFiles.GetUserFeatureDirectory(
+                X509Persistence.CryptographyFeatureName,
+                X509Persistence.OcspSubFeatureName);
+
         private const ulong X509_R_CERT_ALREADY_IN_HASH_TABLE = 0x0B07D065;
 
+        [ThreadStatic]
+        private static HashAlgorithm ts_urlHash;
+
         public static void AddCrlForCertificate(
-            X509Certificate2 cert,
+            SafeX509Handle cert,
             SafeX509StoreHandle store,
             X509RevocationMode revocationMode,
             DateTime verificationTime,
@@ -31,7 +45,16 @@ namespace Internal.Cryptography.Pal
                 verificationTime = DateTime.MinValue;
             }
 
-            if (AddCachedCrl(cert, store, verificationTime))
+            string url = GetCdpUrl(cert);
+
+            if (url == null)
+            {
+                return;
+            }
+
+            string crlFileName = GetCrlFileName(cert, url);
+
+            if (AddCachedCrl(crlFileName, store, verificationTime))
             {
                 return;
             }
@@ -43,12 +66,12 @@ namespace Internal.Cryptography.Pal
                 return;
             }
 
-            DownloadAndAddCrl(cert, store, ref remainingDownloadTime);
+            DownloadAndAddCrl(url, crlFileName, store, ref remainingDownloadTime);
         }
 
-        private static bool AddCachedCrl(X509Certificate2 cert, SafeX509StoreHandle store, DateTime verificationTime)
+        private static bool AddCachedCrl(string crlFileName, SafeX509StoreHandle store, DateTime verificationTime)
         {
-            string crlFile = GetCachedCrlPath(cert);
+            string crlFile = GetCachedCrlPath(crlFileName);
 
             using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "rb"))
             {
@@ -108,17 +131,11 @@ namespace Internal.Cryptography.Pal
         }
 
         private static void DownloadAndAddCrl(
-            X509Certificate2 cert,
+            string url,
+            string crlFileName,
             SafeX509StoreHandle store,
             ref TimeSpan remainingDownloadTime)
         {
-            string url = GetCdpUrl(cert);
-
-            if (url == null)
-            {
-                return;
-            }
-
             // X509_STORE_add_crl will increase the refcount on the CRL object, so we should still
             // dispose our copy.
             using (SafeX509CrlHandle crl = CertificateAssetDownloader.DownloadCrl(url, ref remainingDownloadTime))
@@ -144,7 +161,7 @@ namespace Internal.Cryptography.Pal
                     // the chain as invalid.
                     try
                     {
-                        string crlFile = GetCachedCrlPath(cert, mkDir: true);
+                        string crlFile = GetCachedCrlPath(crlFileName, mkDir: true);
 
                         using (SafeBioHandle bio = Interop.Crypto.BioNewFile(crlFile, "wb"))
                         {
@@ -160,18 +177,17 @@ namespace Internal.Cryptography.Pal
                 }
             }
         }
-        
-        private static string GetCachedCrlPath(X509Certificate2 cert, bool mkDir=false)
+
+        internal static string GetCachedOcspResponseDirectory()
         {
-            OpenSslX509CertificateReader pal = (OpenSslX509CertificateReader)cert.Pal;
+            return s_ocspDir;
+        }
 
-            string crlDir = PersistedFiles.GetUserFeatureDirectory(
-                X509Persistence.CryptographyFeatureName,
-                X509Persistence.CrlsSubFeatureName);
-
+        private static string GetCrlFileName(SafeX509Handle cert, string crlUrl)
+        {
             // X509_issuer_name_hash returns "unsigned long", which is marshalled as ulong.
             // But it only sets 32 bits worth of data, so force it down to uint just... in case.
-            ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(pal.SafeHandle);
+            ulong persistentHashLong = Interop.Crypto.X509IssuerNameHash(cert);
             if (persistentHashLong == 0)
             {
                 Interop.Crypto.ErrClearError();
@@ -179,61 +195,88 @@ namespace Internal.Cryptography.Pal
 
             uint persistentHash = unchecked((uint)persistentHashLong);
 
+            if (ts_urlHash == null)
+            {
+                ts_urlHash = SHA256.Create();
+            }
+
+            Span<byte> hash = stackalloc byte[256 >> 3];
+
+            // Endianness isn't important, it just needs to be consistent.
+            // (Even if the same storage was used for two different endianness systems it'd stabilize at two files).
+            ReadOnlySpan<byte> utf16Url = MemoryMarshal.AsBytes(crlUrl.AsSpan());
+
+            if (!ts_urlHash.TryComputeHash(utf16Url, hash, out int written) || written != hash.Length)
+            {
+                Debug.Fail("TryComputeHash failed or produced an incorrect length output");
+                throw new CryptographicException();
+            }
+
+            uint urlHash = MemoryMarshal.Read<uint>(hash);
+
             // OpenSSL's hashed filename algorithm is the 8-character hex version of the 32-bit value
             // of X509_issuer_name_hash (or X509_subject_name_hash, depending on the context).
-            string localFileName = persistentHash.ToString("x8") + ".crl";
-
-            if (mkDir)
-            {
-                Directory.CreateDirectory(crlDir);
-            }
-
-            return Path.Combine(crlDir, localFileName);
+            //
+            // We mix in an 8-character hex version of the "left"-most bytes of a hash of the URL to
+            // disambiguate when one Issuing Authority separates their revocation across independent CRLs.
+            return $"{persistentHash:x8}.{urlHash:x8}.crl";
         }
 
-        private static string GetCdpUrl(X509Certificate2 cert)
+        private static string GetCachedCrlPath(string localFileName, bool mkDir=false)
         {
-            byte[] crlDistributionPoints = null;
-
-            foreach (X509Extension extension in cert.Extensions)
+            if (mkDir)
             {
-                if (StringComparer.Ordinal.Equals(extension.Oid.Value, Oids.CrlDistributionPoints))
-                {
-                    // If there's an Authority Information Access extension, it might be used for
-                    // looking up additional certificates for the chain.
-                    crlDistributionPoints = extension.RawData;
-                    break;
-                }
+                Directory.CreateDirectory(s_crlDir);
             }
 
-            if (crlDistributionPoints == null)
+            return Path.Combine(s_crlDir, localFileName);
+        }
+
+        private static string GetCdpUrl(SafeX509Handle cert)
+        {
+            ArraySegment<byte> crlDistributionPoints =
+                OpenSslX509CertificateReader.FindFirstExtension(cert, Oids.CrlDistributionPoints);
+
+            if (crlDistributionPoints.Array == null)
             {
                 return null;
             }
 
-            AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
-            AsnReader sequenceReader = reader.ReadSequence();
-            reader.ThrowIfNotEmpty();
-
-            while (sequenceReader.HasData)
+            try
             {
-                DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+                AsnReader reader = new AsnReader(crlDistributionPoints, AsnEncodingRules.DER);
+                AsnReader sequenceReader = reader.ReadSequence();
+                reader.ThrowIfNotEmpty();
 
-                // Only distributionPoint is supported
-                // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.
-                if (distributionPoint.DistributionPoint.HasValue &&
-                    distributionPoint.DistributionPoint.Value.FullName != null)
+                while (sequenceReader.HasData)
                 {
-                    foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
+                    DistributionPointAsn.Decode(sequenceReader, out DistributionPointAsn distributionPoint);
+
+                    // Only distributionPoint is supported
+                    // Only fullName is supported, nameRelativeToCRLIssuer is for LDAP-based lookup.
+                    if (distributionPoint.DistributionPoint.HasValue &&
+                        distributionPoint.DistributionPoint.Value.FullName != null)
                     {
-                        if (name.Uri != null &&
-                            Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
-                            uri.Scheme == "http")
+                        foreach (GeneralNameAsn name in distributionPoint.DistributionPoint.Value.FullName)
                         {
-                            return name.Uri;
+                            if (name.Uri != null &&
+                                Uri.TryCreate(name.Uri, UriKind.Absolute, out Uri uri) &&
+                                uri.Scheme == "http")
+                            {
+                                return name.Uri;
+                            }
                         }
                     }
                 }
+            }
+            catch (CryptographicException)
+            {
+                // Treat any ASN errors as if the extension was missing.
+            }
+            finally
+            {
+                // The data came from a certificate, so it's public.
+                CryptoPool.Return(crlDistributionPoints.Array, clearSize: 0);
             }
 
             return null;

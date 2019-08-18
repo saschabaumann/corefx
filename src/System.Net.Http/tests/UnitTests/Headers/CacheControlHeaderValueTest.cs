@@ -6,12 +6,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
-
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Net.Http.Tests
 {
-    public class CacheControlHeaderValueTest : RemoteExecutorTestBase
+    public class CacheControlHeaderValueTest
     {
         [Fact]
         public void Properties_SetAndGetAllProperties_SetValueReturnedInGetter()
@@ -139,7 +139,7 @@ namespace System.Net.Http.Tests
         [Fact]
         public void ToString_NegativeValues_UsesMinusSignRegardlessOfCurrentCulture()
         {
-            RemoteInvoke(() =>
+            RemoteExecutor.Invoke(() =>
             {
                 var cacheControl = new CacheControlHeaderValue()
                 {
@@ -255,7 +255,7 @@ namespace System.Net.Http.Tests
             cacheControl1.NoCacheHeaders.Add("token1");
             CompareHashCodes(cacheControl1, cacheControl2, true);
 
-            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders 
+            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders
             // have the same values, the hash code will be different.
             cacheControl3.Private = true;
             cacheControl3.PrivateHeaders.Add("token2");
@@ -382,7 +382,7 @@ namespace System.Net.Http.Tests
             cacheControl1.NoCacheHeaders.Add("token1");
             CompareValues(cacheControl1, cacheControl2, true);
 
-            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders 
+            // Since NoCache and Private generate different hash codes, even if NoCacheHeaders and PrivateHeaders
             // have the same values, the hash code will be different.
             cacheControl3.Private = true;
             cacheControl3.PrivateHeaders.Add("token2");

@@ -12,34 +12,20 @@ namespace System.Runtime.InteropServices.Tests
 {
     public partial class GetStartComSlotTests
     {
-        [Theory]
-        [InlineData(typeof(int), -1)]
-        [InlineData(typeof(string), -1)]
-        [InlineData(typeof(NonGenericClass), -1)]
-        [InlineData(typeof(NonGenericStruct), -1)]
-        [InlineData(typeof(NonGenericInterface), 7)]
-        [InlineData(typeof(int*), -1)]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31068, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetStartComSlot_ValidType_ReturnsExpected(Type type, int expected)
-        {
-            Assert.Equal(expected, Marshal.GetStartComSlot(type));
-        }
-        
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
         public void GetStartComSlot_Unix_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Marshal.GetStartComSlot(null));
         }
-        
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetStartComSlot_NullType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => Marshal.GetStartComSlot(null));
         }
-        
+
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
         public void GetStartComSlot_NotRuntimeType_ThrowsArgumentException()
@@ -49,13 +35,13 @@ namespace System.Runtime.InteropServices.Tests
             TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
             AssertExtensions.Throws<ArgumentException>("t", () => Marshal.GetStartComSlot(typeBuilder));
         }
-        
+
         public static IEnumerable<object[]> GetStartComSlot_InvalidGenericType_TestData()
         {
             yield return new object[] { typeof(int).MakeByRefType() };
             yield return new object[] { typeof(GenericClass<>).GetTypeInfo().GenericTypeParameters[0] };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStartComSlot_InvalidGenericType_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
@@ -69,16 +55,22 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { typeof(GenericClass<string>) };
             yield return new object[] { typeof(GenericStruct<>) };
             yield return new object[] { typeof(GenericStruct<string>) };
-            yield return new object[] { typeof(GenericInterface<>) };
-            yield return new object[] { typeof(GenericInterface<string>) };
+            yield return new object[] { typeof(IGenericInterface<>) };
+            yield return new object[] { typeof(IGenericInterface<string>) };
             yield return new object[] { typeof(NonComVisibleClass) };
             yield return new object[] { typeof(NonComVisibleStruct) };
-            yield return new object[] { typeof(NonComVisibleInterface) };
+            yield return new object[] { typeof(INonComVisibleInterface) };
             yield return new object[] { typeof(int[]) };
             yield return new object[] { typeof(int[][]) };
             yield return new object[] { typeof(int[,]) };
+
+            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
+            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
+            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
+            Type collectibleType = typeBuilder.CreateType();
+            yield return new object[] { collectibleType };
         }
-        
+
         [Theory]
         [MemberData(nameof(GetStartComSlot_NotComVisibleType_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]

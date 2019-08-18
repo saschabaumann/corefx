@@ -43,7 +43,7 @@ namespace Internal.Cryptography.Pal
                             {
                                 // SecCertificateCopyKey returns null for DSA, so fall back to manually building it.
                                 return DecodeDsaPublicKey(encodedKeyValue, encodedParameters);
-                            } 
+                            }
                             return new DSAImplementation.DSASecurityTransforms(key);
                         case Oids.EcPublicKey:
                             // If X509GetPublicKey uses the new SecCertificateCopyKey API it can return an invalid
@@ -87,7 +87,7 @@ namespace Internal.Cryptography.Pal
                 RSA rsa = RSA.Create();
                 try
                 {
-                    rsa.ImportRSAPublicKey(encodedKeyValue.AsSpan(), out _);
+                    rsa.ImportRSAPublicKey(new ReadOnlySpan<byte>(encodedKeyValue), out _);
                     return rsa;
                 }
                 catch (Exception)
@@ -143,12 +143,22 @@ namespace Internal.Cryptography.Pal
 
             public X509ContentType GetCertContentType(byte[] rawData)
             {
+                const int errSecUnknownFormat = -25257;
                 if (rawData == null || rawData.Length == 0)
                 {
-                    return X509ContentType.Unknown;
+                    // Throw to match Windows and Unix behavior.
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
                 }
-                
-                return Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+
+                X509ContentType contentType = Interop.AppleCrypto.X509GetContentType(rawData, rawData.Length);
+
+                if (contentType == X509ContentType.Unknown)
+                {
+                    // Throw to match Windows and Unix behavior.
+                    throw Interop.AppleCrypto.CreateExceptionForOSStatus(errSecUnknownFormat);
+                }
+
+                return contentType;
             }
 
             public X509ContentType GetCertContentType(string fileName)

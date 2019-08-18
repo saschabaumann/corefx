@@ -14,11 +14,12 @@ using System.Reflection;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 namespace System.Runtime.Serialization.Formatters.Tests
 {
-    public partial class BinaryFormatterTests : RemoteExecutorTestBase
+    public partial class BinaryFormatterTests : FileCleanupTestBase
     {
         // On 32-bit we can't test these high inputs as they cause OutOfMemoryExceptions.
         [ConditionalTheory(typeof(Environment), nameof(Environment.Is64BitProcess))]
@@ -55,22 +56,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
 
             EqualityExtensions.CheckEquals(obj, clone, isSamePlatform: true);
-        }
-
-        // Used for updating blobs in BinaryFormatterTestData.cs
-        //[Fact]
-        public void UpdateBlobs()
-        {
-            string testDataFilePath = GetTestDataFilePath();
-            string[] coreTypeBlobs = SerializableEqualityComparers_MemberData()
-                .Concat(SerializableObjects_MemberData())
-                .Select(record => BinaryFormatterHelpers.ToBase64String(record[0]))
-                .ToArray();
-
-            var (numberOfBlobs, numberOfFoundBlobs, numberOfUpdatedBlobs) = UpdateCoreTypeBlobs(testDataFilePath, coreTypeBlobs);
-            Console.WriteLine($"{numberOfBlobs} existing blobs" +
-                $"{Environment.NewLine}{numberOfFoundBlobs} found blobs with regex search" +
-                $"{Environment.NewLine}{numberOfUpdatedBlobs} updated blobs with regex replace");
         }
 
         [Theory]
@@ -111,7 +96,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 var tmpList = new List<TypeSerializableValue>(blobs);
                 tmpList.RemoveAt(1);
 
-                int index = tmpList.FindIndex(b => b.Platform.IsNetfxPlatform());
+                int index = tmpList.FindIndex(b => b.Platform.ToString().StartsWith("netfx"));
                 if (index >= 0)
                     tmpList.RemoveAt(index);
 
@@ -144,11 +129,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             try
             {
+#pragma warning disable RE0001 // Regex issue: {0}
                 new Regex("*"); // parsing "*" - Quantifier {x,y} following nothing.
+#pragma warning restore RE0001 // Regex issue: {0}
             }
             catch (ArgumentException ex)
             {
-                Assert.Equal(ex.GetType().Name, "RegexParseException");
+                Assert.Equal("RegexParseException", ex.GetType().Name);
                 ArgumentException clone = BinaryFormatterHelpers.Clone(ex);
                 Assert.IsType<ArgumentException>(clone);
             }
@@ -352,7 +339,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             f.Binder = binder;
             Assert.Same(binder, f.Binder);
 
-            Assert.NotNull(f.Context);
             Assert.Null(f.Context.Context);
             Assert.Equal(StreamingContextStates.All, f.Context.State);
             var context = new StreamingContext(StreamingContextStates.Clone);
@@ -406,7 +392,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             {
                 var result = (Version2ClassWithoutOptionalField)f.Deserialize(s);
                 Assert.NotNull(result);
-                Assert.Equal(null, result.Value);
+                Assert.Null(result.Value);
             }
         }
 
@@ -424,7 +410,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             f.Binder = new DelegateBinder { BindToTypeDelegate = (_, __) => typeof(Version2ClassWithOptionalField) };
             var result = (Version2ClassWithOptionalField)f.Deserialize(s);
             Assert.NotNull(result);
-            Assert.Equal(null, result.Value);
+            Assert.Null(result.Value);
         }
 
         [Fact]
@@ -435,11 +421,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
             Assert.Equal(42, real);
         }
 
-        // Test is disabled becaues it can cause improbable memory allocations leading to interminable paging.
-        // We're keeping the code because it could be useful to a dev making local changes to binary formatter code.
-        //[OuterLoop]
-        //[Theory]
-        //[MemberData(nameof(FuzzInputs_MemberData))]
+        [OuterLoop]
+        [Theory(Skip = "Can cause improbable memory allocations leading to interminable paging")]
+        [MemberData(nameof(FuzzInputs_MemberData))]
         public void Deserialize_FuzzInput(object obj, Random rand)
         {
             // Get the serialized data for the object
@@ -502,7 +486,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
 
             // In another process, deserialize from that file and serialize to another
-            RemoteInvoke((remoteInput, remoteOutput) =>
+            RemoteExecutor.Invoke((remoteInput, remoteOutput) =>
             {
                 Assert.False(File.Exists(remoteOutput));
                 using (FileStream input = File.OpenRead(remoteInput))
@@ -510,7 +494,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 {
                     var b = new BinaryFormatter();
                     b.Serialize(output, b.Deserialize(input));
-                    return SuccessExitCode;
+                    return RemoteExecutor.SuccessExitCode;
                 }
             }, outputPath, inputPath).Dispose();
 
@@ -524,7 +508,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework fails when serializing arrays with non-zero lower bounds")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UAPAOT does not support non-zero lower bounds")]
         public void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
         {
             BinaryFormatterHelpers.Clone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
@@ -563,7 +546,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // These types are unstable during serialization and produce different blobs.
             if (obj is WeakReference<Point> ||
                 obj is Collections.Specialized.HybridDictionary ||
-                obj is Color)
+                obj is Color ||
+                obj.GetType().FullName == "System.Collections.SortedList+SyncSortedList")
             {
                 return;
             }

@@ -18,12 +18,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
-            if(definition == null)
+            if (definition == null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if(member == null)
+            if (member == null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -54,12 +54,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     exportedValue = _member.GetValue(instance);
                 }
                 catch (TargetInvocationException exception)
-                {   // Member threw an exception. Avoid letting this 
+                {   // Member threw an exception. Avoid letting this
                     // leak out as a 'raw' unhandled exception, instead,
                     // we'll add some context and rethrow.
 
                     throw new ComposablePartException(
-                        string.Format(CultureInfo.CurrentCulture,
+                        SR.Format(
                             SR.ReflectionModel_ExportThrewException,
                             _member.GetDisplayName()),
                         Definition.ToElement(),
@@ -71,7 +71,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                     // this is not supported in MEF currently.  Ideally we would validate against it, however, we already shipped
                     // so we will turn it into a ComposablePartException instead, that they should already be prepared for
                     throw new ComposablePartException(
-                        string.Format(CultureInfo.CurrentCulture,
+                        SR.Format(
                         SR.ExportNotValidOnIndexers,
                         _member.GetDisplayName()),
                         Definition.ToElement(),
@@ -99,7 +99,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {   // Property does not have a getter
 
                 throw new ComposablePartException(
-                    string.Format(CultureInfo.CurrentCulture, 
+                    SR.Format(
                         SR.ReflectionModel_ExportNotReadable,
                         _member.GetDisplayName()),
                     Definition.ToElement());

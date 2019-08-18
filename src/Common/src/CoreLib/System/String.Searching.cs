@@ -3,8 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Numerics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
@@ -14,7 +12,14 @@ namespace System
     {
         public bool Contains(string value)
         {
-            return (IndexOf(value, StringComparison.Ordinal) >= 0);
+            if (value == null)
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
+
+            return SpanHelpers.IndexOf(
+                ref _firstChar,
+                Length,
+                ref value._firstChar,
+                value.Length) >= 0;
         }
 
         public bool Contains(string value, StringComparison comparisonType)
@@ -102,7 +107,7 @@ namespace System
             if (anyOf.Length > 0 && anyOf.Length <= 5)
             {
                 // The ReadOnlySpan.IndexOfAny extension is vectorized for values of 1 - 5 in length
-                var result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
+                int result = new ReadOnlySpan<char>(ref Unsafe.Add(ref _firstChar, startIndex), count).IndexOfAny(anyOf);
                 return result == -1 ? result : result + startIndex;
             }
             else if (anyOf.Length > 5)
@@ -160,7 +165,7 @@ namespace System
         // The character map is an array of 8 integers acting as map blocks. The 3 lsb
         // in each byte in the character is used to index into this map to get the
         // right block, the value of the remaining 5 msb are used as the bit position
-        // inside this block. 
+        // inside this block.
         private static unsafe void InitializeProbabilisticMap(uint* charMap, ReadOnlySpan<char> anyOf)
         {
             bool hasAscii = false;
@@ -261,6 +266,17 @@ namespace System
             if (count < 0 || startIndex > this.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
+            if (comparisonType == StringComparison.Ordinal)
+            {
+                int result = SpanHelpers.IndexOf(
+                    ref Unsafe.Add(ref this._firstChar, startIndex),
+                    count,
+                    ref value._firstChar,
+                    value.Length);
+
+                return (result >= 0 ? startIndex : 0) + result;
+            }
+
             switch (comparisonType)
             {
                 case StringComparison.CurrentCulture:
@@ -271,7 +287,6 @@ namespace System
                 case StringComparison.InvariantCultureIgnoreCase:
                     return CompareInfo.Invariant.IndexOf(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType));
 
-                case StringComparison.Ordinal:
                 case StringComparison.OrdinalIgnoreCase:
                     return CompareInfo.Invariant.IndexOfOrdinal(this, value, startIndex, count, GetCaseCompareOfComparisonCulture(comparisonType) != CompareOptions.None);
 

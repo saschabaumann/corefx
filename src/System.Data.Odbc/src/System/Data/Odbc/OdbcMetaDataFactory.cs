@@ -182,7 +182,7 @@ namespace System.Data.Odbc
         private void DataTableFromDataReaderDataTypes(DataTable dataTypesTable, OdbcDataReader dataReader, OdbcConnection connection)
         {
             DataTable schemaTable = null;
-            // 
+            //
 
             // Build a DataTable from the reader
             schemaTable = dataReader.GetSchemaTable();
@@ -329,7 +329,7 @@ namespace System.Data.Odbc
 
                         case ODBC32.SQL_TYPE.SS_UDT:
                         default:
-                            // for User defined types don't know if its long or or if it is
+                            // for User defined types don't know if its long or if it is
                             // varaible length or not so leave the fields null
                             break;
                     }
@@ -1106,7 +1106,7 @@ namespace System.Data.Odbc
             DataTable schemaTable = reader.GetSchemaTable();
             foreach (DataRow row in schemaTable.Rows)
             {
-                resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"] as Type);
+                resultTable.Columns.Add(row["ColumnName"] as string, (Type)row["DataType"]);
             }
 
             values = new object[resultTable.Columns.Count];

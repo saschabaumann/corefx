@@ -1,6 +1,9 @@
-using System.Runtime.CompilerServices;
-using System.Runtime.Intrinsics;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
+#pragma warning disable IDE0060 // unused parameters
+using System.Runtime.CompilerServices;
 
 namespace System.Runtime.Intrinsics.Arm.Arm64
 {
@@ -12,7 +15,7 @@ namespace System.Runtime.Intrinsics.Arm.Arm64
     [CLSCompliant(false)]
     public static class Base
     {
-        public static bool IsSupported { get { return false; }}
+        public static bool IsSupported { [Intrinsic] get { return false; }}
 
         /// <summary>
         /// Vector LeadingSignCount

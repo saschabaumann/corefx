@@ -209,8 +209,8 @@ namespace System.Net.Http
                     return;
                 }
 
-                // libcurl supports options for either enabling all of the TLS1.* protocols or enabling 
-                // just one protocol; it doesn't currently support enabling two of the three, e.g. you can't 
+                // libcurl supports options for either enabling all of the TLS1.* protocols or enabling
+                // just one protocol; it doesn't currently support enabling two of the three, e.g. you can't
                 // pick TLS1.1 and TLS1.2 but not TLS1.0, but you can select just TLS1.2.
                 Interop.Http.CurlSslVersion curlSslVersion;
                 switch (protocols)
@@ -233,8 +233,12 @@ namespace System.Net.Http
                     case SslProtocols.Tls12:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_2;
                         break;
+                    case SslProtocols.Tls13:
+                        curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1_3;
+                        break;
 
                     case SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12:
+                    case SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12 | SslProtocols.Tls13:
                         curlSslVersion = Interop.Http.CurlSslVersion.CURL_SSLVERSION_TLSv1;
                         break;
 
@@ -371,17 +375,13 @@ namespace System.Net.Http
                         !easy._handler.CheckCertificateRevocationList)
                     {
                         // Start by using the default verification provided directly by OpenSSL.
-                        // If it succeeds in verifying the cert chain, we're done. Employing this instead of 
-                        // our custom implementation will need to be revisited if we ever decide to introduce a 
+                        // If it succeeds in verifying the cert chain, we're done. Employing this instead of
+                        // our custom implementation will need to be revisited if we ever decide to introduce a
                         // "disallowed" store that enables users to "untrust" certs the system trusts.
-                        int sslResult = Interop.Crypto.X509VerifyCert(storeCtx);
-                        if (sslResult == 1)
+                        if (Interop.Crypto.X509VerifyCert(storeCtx))
                         {
                             return true;
                         }
-
-                        // X509_verify_cert can return < 0 in the case of programmer error
-                        Debug.Assert(sslResult == 0, "Unexpected error from X509_verify_cert: " + sslResult);
                     }
 
                     // Either OpenSSL verification failed, or there was a server validation callback

@@ -21,8 +21,8 @@ namespace System.Xml.Xsl.XsltOld
         private Processor _processor;
 
         // storage for the functions
-        private static Hashtable s_FunctionTable = CreateFunctionTable();
-        private static IXsltContextFunction s_FuncNodeSet = new FuncNodeSet();
+        private static readonly Hashtable s_FunctionTable = CreateFunctionTable();
+        private static readonly IXsltContextFunction s_FuncNodeSet = new FuncNodeSet();
         private const string f_NodeSet = "node-set";
 
         internal XsltCompileContext(InputScopeManager manager, Processor processor) : base(/*dummy*/false)
@@ -726,7 +726,7 @@ namespace System.Xml.Xsl.XsltOld
                     case XPathResultType.Error:
                         return val;
                     default:
-                        Debug.Assert(false, "unexpected XPath type");
+                        Debug.Fail("unexpected XPath type");
                         return val;
                 }
             }
@@ -946,9 +946,9 @@ namespace System.Xml.Xsl.XsltOld
 
         private class FuncExtension : XsltFunctionImpl
         {
-            private object _extension;
-            private MethodInfo _method;
-            private Type[] _types;
+            private readonly object _extension;
+            private readonly MethodInfo _method;
+            private readonly Type[] _types;
 
             public FuncExtension(object extension, MethodInfo method)
             {

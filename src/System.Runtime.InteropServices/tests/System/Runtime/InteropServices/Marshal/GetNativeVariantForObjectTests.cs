@@ -76,16 +76,12 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new object[] { valueType, null }, (VarEnum)8204, (IntPtr)(-1) };
 
             // Delegate.
-            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod));
+            MethodInfo method = typeof(GetNativeVariantForObjectTests).GetMethod(nameof(NonGenericMethod), BindingFlags.NonPublic | BindingFlags.Static);
             Delegate d = method.CreateDelegate(typeof(NonGenericDelegate));
             yield return new object[] { d, VarEnum.VT_DISPATCH, (IntPtr)(-1) };
         }
 
-        [Theory]
-        [MemberData(nameof(GetNativeVariantForObject_RoundtrippingPrimitives_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
+        private void GetNativeVariantForObject_RoundtrippingPrimitives_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue)
         {
             GetNativeVariantForObject_ValidObject_Success(primitive, expectedVarType, expectedValue, primitive);
         }
@@ -160,7 +156,7 @@ namespace System.Runtime.InteropServices.Tests
             var structWithInterface = new StructWithInterface();
             yield return new object[] { new ClassWithInterface[] { classWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, null } };
             yield return new object[] { new StructWithInterface[] { structWithInterface }, (VarEnum)8228, (IntPtr)(-1), new StructWithInterface[] { structWithInterface } };
-            yield return new object[] { new NonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
+            yield return new object[] { new INonGenericInterface[] { classWithInterface, structWithInterface, null }, (VarEnum)8201, (IntPtr)(-1), new object[] { classWithInterface, structWithInterface, null } };
 
             // Enums.
             yield return new object[] { SByteEnum.Value2, VarEnum.VT_I1, (IntPtr)1, (sbyte)1 };
@@ -188,7 +184,7 @@ namespace System.Runtime.InteropServices.Tests
         [Theory]
         [MemberData(nameof(GetNativeVariantForObject_NonRoundtrippingPrimitives_TestData))]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
+        [ActiveIssue(31077)]
         public void GetNativeVariantForObject_ValidObject_Success(object primitive, VarEnum expectedVarType, IntPtr expectedValue, object expectedRoundtripValue)
         {
             var v = new Variant();
@@ -263,7 +259,7 @@ namespace System.Runtime.InteropServices.Tests
 
                 Variant result = Marshal.PtrToStructure<Variant>(pNative);
                 Assert.Equal(VarEnum.VT_R8, (VarEnum)result.vt);
-                Assert.Equal(*((IntPtr*)&obj), result.bstrVal);
+                Assert.Equal(*((ulong*)&obj), *((ulong*)&result.bstrVal));
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -287,7 +283,7 @@ namespace System.Runtime.InteropServices.Tests
 
                 Variant result = Marshal.PtrToStructure<Variant>(pNative);
                 Assert.Equal(VarEnum.VT_R4, (VarEnum)result.vt);
-                Assert.Equal(*((IntPtr*)&obj), result.bstrVal);
+                Assert.Equal(*((uint*)&obj), *((uint*)&result.bstrVal));
 
                 object o = Marshal.GetObjectForNativeVariant(pNative);
                 Assert.Equal(obj, o);
@@ -340,25 +336,6 @@ namespace System.Runtime.InteropServices.Tests
 
             yield return new object[] { new Color[0] };
             yield return new object[] { new Color[] { Color.FromArgb(10) } };
-        }
-
-        [Theory]
-        [MemberData(nameof(GetNativeVariant_NotInteropCompatible_TestData))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        [ActiveIssue(31077, ~TargetFrameworkMonikers.NetFramework)]
-        public void GetNativeVariant_NotInteropCompatible_ThrowsArgumentException(object obj)
-        {
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject(obj, pNative));
-                AssertExtensions.Throws<ArgumentException>(null, () => Marshal.GetNativeVariantForObject<object>(obj, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
         }
 
         [Fact]
@@ -449,38 +426,13 @@ namespace System.Runtime.InteropServices.Tests
             }
         }
 
-#if !netstandard // TODO: Enable for netstandard2.1
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNative))]
-        [PlatformSpecific(TestPlatforms.Windows)]
-        public void GetNativeVariantForObject_ObjectNotCollectible_ThrowsNotSupportedException()
-        {
-            AssemblyBuilder assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("Assembly"), AssemblyBuilderAccess.RunAndCollect);
-            ModuleBuilder moduleBuilder = assemblyBuilder.DefineDynamicModule("Module");
-            TypeBuilder typeBuilder = moduleBuilder.DefineType("Type");
-            Type type = typeBuilder.CreateType();
-
-            object o = Activator.CreateInstance(type);
-
-            var v = new Variant();
-            IntPtr pNative = Marshal.AllocHGlobal(Marshal.SizeOf(v));
-            try
-            {
-                Assert.Throws<NotSupportedException>(() => Marshal.GetNativeVariantForObject(o, pNative));
-            }
-            finally
-            {
-                Marshal.FreeHGlobal(pNative);
-            }
-        }
-#endif
-
         public struct StructWithValue
         {
             public int Value;
         }
 
-        public class ClassWithInterface : NonGenericInterface { }
-        public struct StructWithInterface : NonGenericInterface { }
+        public class ClassWithInterface : INonGenericInterface { }
+        public struct StructWithInterface : INonGenericInterface { }
 
         public enum SByteEnum : sbyte { Value1, Value2 }
         public enum Int16Enum : short { Value1, Value2 }
@@ -492,7 +444,7 @@ namespace System.Runtime.InteropServices.Tests
         public enum UInt32Enum : uint { Value1, Value2 }
         public enum UInt64Enum : ulong { Value1, Value2 }
 
-        public static void NonGenericMethod(int i) { }
+        private static void NonGenericMethod(int i) { }
         public delegate void NonGenericDelegate(int i);
 
         public class FakeSafeHandle : SafeHandle

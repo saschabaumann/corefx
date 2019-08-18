@@ -9,7 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace System.Numerics
 {
     /// <summary>
-    /// A complex number z is a number of the form z = x + yi, where x and y 
+    /// A complex number z is a number of the form z = x + yi, where x and y
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
     [Serializable]
@@ -19,6 +19,8 @@ namespace System.Numerics
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
         public static readonly Complex ImaginaryOne = new Complex(0.0, 1.0);
+        public static readonly Complex NaN = new Complex(double.NaN, double.NaN);
+        public static readonly Complex Infinity = new Complex(double.PositiveInfinity, double.PositiveInfinity);
 
         private const double InverseOfLog10 = 0.43429448190325; // 1 / Log(10)
 
@@ -121,17 +123,17 @@ namespace System.Numerics
         {
             return new Complex(-value.m_real, -value.m_imaginary);
         }
-        
+
         public static Complex operator +(Complex left, Complex right)
         {
             return new Complex(left.m_real + right.m_real, left.m_imaginary + right.m_imaginary);
         }
-        
+
         public static Complex operator +(Complex left, double right)
         {
             return new Complex(left.m_real + right, left.m_imaginary);
         }
-        
+
         public static Complex operator +(double left, Complex right)
         {
             return new Complex(left + right.m_real, right.m_imaginary);
@@ -356,7 +358,7 @@ namespace System.Numerics
             }
             return One / value;
         }
-        
+
         public static bool operator ==(Complex left, Complex right)
         {
             return left.m_real == right.m_real && left.m_imaginary == right.m_imaginary;
@@ -419,7 +421,7 @@ namespace System.Numerics
             // There is a known limitation with this algorithm: inputs that cause sinh and cosh to overflow, but for
             // which sin or cos are small enough that sin * cosh or cos * sinh are still representable, nonetheless
             // produce overflow. For example, Sin((0.01, 711.0)) should produce (~3.0E306, PositiveInfinity), but
-            // instead produces (PositiveInfinity, PositiveInfinity). 
+            // instead produces (PositiveInfinity, PositiveInfinity).
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Sinh", Justification = "Sinh is the name of a mathematical function.")]
@@ -497,7 +499,7 @@ namespace System.Numerics
             // even though their ratio does not. In that case, divide through by cosh to get:
             //   tan z = (sin(2x) / cosh(2y) + i \tanh(2y)) / (1 + cos(2x) / cosh(2y))
             // which correctly computes the (tiny) real part and the (normal-sized) imaginary part.
-            
+
             double x2 = 2.0 * value.m_real;
             double y2 = 2.0 * value.m_imaginary;
             double p = Math.Exp(y2);
@@ -647,6 +649,11 @@ namespace System.Numerics
             }
         }
 
+        public static bool IsFinite(Complex value) => double.IsFinite(value.m_real) && double.IsFinite(value.m_imaginary);
+
+        public static bool IsInfinity(Complex value) => double.IsInfinity(value.m_real) || double.IsInfinity(value.m_imaginary);
+
+        public static bool IsNaN(Complex value) => !IsInfinity(value) && !IsFinite(value);
 
         public static Complex Log(Complex value)
         {
@@ -713,7 +720,7 @@ namespace System.Numerics
                 // symmetries. Much better than atan + cos + sin!
 
                 // The signs are a matter of choice of branch cut, which is traditionally taken so x > 0 and sign(y) = sign(b).
-      
+
                 // If the components are too large, Hypot will overflow, even though the subsequent sqrt would
                 // make the result representable. To avoid this, we re-scale (by exact powers of 2 for accuracy)
                 // when we encounter very large components to avoid intermediate infinities.
@@ -734,7 +741,7 @@ namespace System.Numerics
                         rescale = true;
                     }
                 }
- 
+
                 // This is the core of the algorithm. Everything else is special case handling.
                 double x, y;
                 if (value.m_real >= 0.0)
@@ -758,7 +765,7 @@ namespace System.Numerics
                 return new Complex(x, y);
 
             }
-            
+
         }
 
         public static Complex Pow(Complex value, Complex power)
@@ -791,7 +798,7 @@ namespace System.Numerics
         {
             return Pow(value, new Complex(power, 0));
         }
-        
+
         private static Complex Scale(Complex value, double factor)
         {
             double realResult = factor * value.m_real;

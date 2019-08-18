@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Buffers;
 using System.Runtime.InteropServices;
 using System.Globalization;
 using System.Security;
@@ -24,7 +25,6 @@ namespace System.Diagnostics
     {
         internal const string PerfShimName = "netfxperf.dll";
         private const string PerfShimFullNameSuffix = @"\netfxperf.dll";
-        private const string PerfShimPathExp = @"%systemroot%\system32\netfxperf.dll";
         internal const string OpenEntryPoint = "OpenPerformanceData";
         internal const string CollectEntryPoint = "CollectPerformanceData";
         internal const string CloseEntryPoint = "ClosePerformanceData";
@@ -53,8 +53,8 @@ namespace System.Diagnostics
         private static volatile string s_symbolFilePath;
 
         private PerformanceMonitor _performanceMonitor;
-        private string _machineName;
-        private string _perfLcid;
+        private readonly string _machineName;
+        private readonly string _perfLcid;
 
 
         private static volatile Hashtable s_libraryTable;
@@ -125,7 +125,7 @@ namespace System.Diagnostics
                         if (_categoryTable == null)
                         {
                             ReadOnlySpan<byte> data = GetPerformanceData("Global");
-                      
+
                             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
                             int pos = dataBlock.HeaderLength;
 
@@ -147,7 +147,7 @@ namespace System.Diagnostics
                                 int index3 = 0;
                                 int previousCounterIndex = -1;
                                 //Need to filter out counters that are repeated, some providers might
-                                //return several adyacent copies of the same counter.
+                                //return several adjacent copies of the same counter.
                                 for (int index2 = 0; index2 < newCategoryEntry.CounterIndexes.Length; ++index2)
                                 {
                                     ref readonly PERF_COUNTER_DEFINITION perfCounter = ref MemoryMarshal.AsRef<PERF_COUNTER_DEFINITION>(data.Slice(pos));
@@ -166,8 +166,8 @@ namespace System.Diagnostics
                                 {
                                     int[] adjustedCounterIndexes = new int[index3];
                                     int[] adjustedHelpIndexes = new int[index3];
-                                    Array.Copy(newCategoryEntry.CounterIndexes, adjustedCounterIndexes, index3);
-                                    Array.Copy(newCategoryEntry.HelpIndexes, adjustedHelpIndexes, index3);
+                                    Array.Copy(newCategoryEntry.CounterIndexes, 0, adjustedCounterIndexes, 0, index3);
+                                    Array.Copy(newCategoryEntry.HelpIndexes, 0, adjustedHelpIndexes, 0, index3);
                                     newCategoryEntry.CounterIndexes = adjustedCounterIndexes;
                                     newCategoryEntry.HelpIndexes = adjustedHelpIndexes;
                                 }
@@ -371,7 +371,7 @@ namespace System.Diagnostics
             if (!categoryExists)
             {
                 // Consider adding diagnostic logic here, may be we can dump the nameTable...
-                throw new InvalidOperationException(SR.Format(SR.MissingCategory));
+                throw new InvalidOperationException(SR.MissingCategory);
             }
 
             return counterExists;
@@ -456,7 +456,7 @@ namespace System.Diagnostics
                         iniWriter.Write(HelpSufix);
                         iniWriter.Write("=");
                         if (categoryHelp == null || categoryHelp == string.Empty)
-                            iniWriter.WriteLine(SR.Format(SR.HelpNotAvailable));
+                            iniWriter.WriteLine(SR.HelpNotAvailable);
                         else
                             iniWriter.WriteLine(categoryHelp);
 
@@ -642,10 +642,10 @@ namespace System.Diagnostics
             }
         }
 
-        // Ensures that the customCategoryTable is initialized and decides whether the category passed in 
+        // Ensures that the customCategoryTable is initialized and decides whether the category passed in
         //  1) is a custom category
         //  2) is a multi instance custom category
-        // The return value is whether the category is a custom category or not. 
+        // The return value is whether the category is a custom category or not.
         internal bool FindCustomCategory(string category, out PerformanceCounterCategoryType categoryType)
         {
             RegistryKey key = null;
@@ -682,7 +682,7 @@ namespace System.Diagnostics
                             }
                             catch (SecurityException)
                             {
-                                // we may not have permission to read the registry key on the remote machine.  The security exception  
+                                // we may not have permission to read the registry key on the remote machine.  The security exception
                                 // is thrown when RegOpenKeyEx returns ERROR_ACCESS_DENIED or ERROR_BAD_IMPERSONATION_LEVEL
                                 //
                                 // In this case we return an 'Unknown' category type and 'false' to indicate the category is *not* custom.
@@ -718,7 +718,6 @@ namespace System.Diagnostics
                             object objectID = key.GetValue("First Counter");
                             if (objectID != null)
                             {
-                                int firstID = (int)objectID;
                                 lock (table)
                                 {
                                     table[category] = categoryType;
@@ -770,7 +769,7 @@ namespace System.Diagnostics
             PerformanceCounterLib library;
             string help;
 
-            //First check the current culture for the category. This will allow 
+            //First check the current culture for the category. This will allow
             //PerformanceCounterCategory.CategoryHelp to return localized strings.
             if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
             {
@@ -792,7 +791,7 @@ namespace System.Diagnostics
             help = library.GetCategoryHelp(category);
 
             if (help == null)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategory));
+                throw new InvalidOperationException(SR.MissingCategory);
 
             return help;
         }
@@ -823,7 +822,7 @@ namespace System.Diagnostics
                 }
             }
             if (sample == null)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategory));
+                throw new InvalidOperationException(SR.MissingCategory);
 
             return sample;
         }
@@ -835,7 +834,7 @@ namespace System.Diagnostics
                 return null;
 
             CategorySample sample = null;
-            byte[] dataRef = GetPerformanceData(entry.NameIndex.ToString(CultureInfo.InvariantCulture));
+            byte[] dataRef = GetPerformanceData(entry.NameIndex.ToString(CultureInfo.InvariantCulture), usePool: true);
             if (dataRef == null)
                 throw new InvalidOperationException(SR.Format(SR.CantReadCategory, category));
 
@@ -864,7 +863,7 @@ namespace System.Diagnostics
             }
 
             if (!categoryExists)
-                throw new InvalidOperationException(SR.Format(SR.MissingCategory));
+                throw new InvalidOperationException(SR.MissingCategory);
 
             return counters;
         }
@@ -895,7 +894,7 @@ namespace System.Diagnostics
             if (index2 < counters.Length)
             {
                 string[] adjustedCounters = new string[index2];
-                Array.Copy(counters, adjustedCounters, index2);
+                Array.Copy(counters, 0, adjustedCounters, 0, index2);
                 counters = adjustedCounters;
             }
 
@@ -908,8 +907,8 @@ namespace System.Diagnostics
             bool categoryExists = false;
             string help;
 
-            //First check the current culture for the counter. This will allow 
-            //PerformanceCounter.CounterHelp to return localized strings.            
+            //First check the current culture for the counter. This will allow
+            //PerformanceCounter.CounterHelp to return localized strings.
             if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
@@ -1012,7 +1011,7 @@ namespace System.Diagnostics
             }
         }
 
-        internal byte[] GetPerformanceData(string item)
+        internal byte[] GetPerformanceData(string item, bool usePool = false)
         {
             if (_performanceMonitor == null)
             {
@@ -1023,7 +1022,12 @@ namespace System.Diagnostics
                 }
             }
 
-            return _performanceMonitor.GetData(item);
+            return _performanceMonitor.GetData(item, usePool);
+        }
+
+        internal void ReleasePerformanceData(byte[] data)
+        {
+            _performanceMonitor.ReleaseData(data);
         }
 
         private Hashtable GetStringTable(bool isHelp)
@@ -1044,11 +1048,11 @@ namespace System.Diagnostics
                 int waitRetries = 14;   //((2^13)-1)*10ms == approximately 1.4mins
                 int waitSleep = 0;
 
-                // In some stress situations, querying counter values from 
-                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009 
-                // often returns null/empty data back. We should build fault-tolerance logic to 
-                // make it more reliable because getting null back once doesn't necessarily mean 
-                // that the data is corrupted, most of the time we would get the data just fine 
+                // In some stress situations, querying counter values from
+                // HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Perflib\009
+                // often returns null/empty data back. We should build fault-tolerance logic to
+                // make it more reliable because getting null back once doesn't necessarily mean
+                // that the data is corrupted, most of the time we would get the data just fine
                 // in subsequent tries.
                 while (waitRetries > 0)
                 {
@@ -1076,7 +1080,7 @@ namespace System.Diagnostics
                     catch (IOException)
                     {
                         // RegistryKey throws if it can't find the value.  We want to return an empty table
-                        // and throw a different exception higher up the stack. 
+                        // and throw a different exception higher up the stack.
                         names = null;
                         break;
                     }
@@ -1111,7 +1115,7 @@ namespace System.Diagnostics
                             }
                             else
                             {
-                                // Counter Name Table 
+                                // Counter Name Table
                                 throw new InvalidOperationException(SR.Format(SR.CounterNameCorrupt, names[index * 2]));
                             }
                         }
@@ -1248,7 +1252,7 @@ namespace System.Diagnostics
                 res = 0;
 
             if (res != 0)
-                throw SharedUtils.CreateSafeWin32Exception(res);
+                throw new Win32Exception(res);
         }
 
         internal static void UnregisterCategory(string categoryName)
@@ -1262,8 +1266,8 @@ namespace System.Diagnostics
 
     internal class PerformanceMonitor
     {
-        private RegistryKey perfDataKey = null;
-        private string machineName;
+        private PerformanceDataRegistryKey perfDataKey = null;
+        private readonly string machineName;
 
         internal PerformanceMonitor(string machineName)
         {
@@ -1277,10 +1281,10 @@ namespace System.Diagnostics
             {
                 if (machineName != "." && !string.Equals(machineName, PerformanceCounterLib.ComputerName, StringComparison.OrdinalIgnoreCase))
                 {
-                    perfDataKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.PerformanceData, machineName);
+                    perfDataKey = PerformanceDataRegistryKey.OpenRemoteBaseKey(machineName);
                 }
                 else
-                    perfDataKey = Registry.PerformanceData;
+                    perfDataKey = PerformanceDataRegistryKey.OpenLocal();
             }
             catch (UnauthorizedAccessException)
             {
@@ -1302,16 +1306,16 @@ namespace System.Diagnostics
             perfDataKey = null;
         }
 
-        // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some 
-        // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY, 
-        // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the 
-        // wait loop and switch case below). We want to wait most certainly more than a 2min window. 
-        // The curent wait time of up to 10mins takes care of the known stress deadlock issues. In most 
-        // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time 
-        // we wait may not be sufficient if the Win32 code keeps running into this deadlock again 
-        // and again. A condition very rare but possible in theory. We would get back to the user 
+        // Win32 RegQueryValueEx for perf data could deadlock (for a Mutex) up to 2mins in some
+        // scenarios before they detect it and exit gracefully. In the mean time, ERROR_BUSY,
+        // ERROR_NOT_READY etc can be seen by other concurrent calls (which is the reason for the
+        // wait loop and switch case below). We want to wait most certainly more than a 2min window.
+        // The curent wait time of up to 10mins takes care of the known stress deadlock issues. In most
+        // cases we wouldn't wait for more than 2mins anyways but in worst cases how much ever time
+        // we wait may not be sufficient if the Win32 code keeps running into this deadlock again
+        // and again. A condition very rare but possible in theory. We would get back to the user
         // in this case with InvalidOperationException after the wait time expires.
-        internal byte[] GetData(string item)
+        internal byte[] GetData(string item, bool usePool)
         {
             int waitRetries = 17;   //2^16*10ms == approximately 10mins
             int waitSleep = 0;
@@ -1323,7 +1327,7 @@ namespace System.Diagnostics
             {
                 try
                 {
-                    data = (byte[])perfDataKey.GetValue(item);
+                    data = perfDataKey.GetValue(item, usePool);
                     return data;
                 }
                 catch (IOException e)
@@ -1335,9 +1339,9 @@ namespace System.Diagnostics
                         case Interop.Errors.ERROR_INVALID_HANDLE:
                         case Interop.Advapi32.RPCStatus.RPC_S_SERVER_UNAVAILABLE:
                             Init();
-                            goto case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT;
+                            goto case Interop.Kernel32.WAIT_TIMEOUT;
 
-                        case Interop.Advapi32.WaitOptions.WAIT_TIMEOUT:
+                        case Interop.Kernel32.WAIT_TIMEOUT:
                         case Interop.Errors.ERROR_NOT_READY:
                         case Interop.Errors.ERROR_LOCK_FAILED:
                         case Interop.Errors.ERROR_BUSY:
@@ -1354,7 +1358,7 @@ namespace System.Diagnostics
                             break;
 
                         default:
-                            throw SharedUtils.CreateSafeWin32Exception(error);
+                            throw new Win32Exception(error);
                     }
                 }
                 catch (InvalidCastException e)
@@ -1363,7 +1367,12 @@ namespace System.Diagnostics
                 }
             }
 
-            throw SharedUtils.CreateSafeWin32Exception(error);
+            throw new Win32Exception(error);
+        }
+
+        internal void ReleaseData(byte[] data)
+        {
+            perfDataKey.ReleaseData(data);
         }
 
     }
@@ -1384,7 +1393,7 @@ namespace System.Diagnostics
         }
     }
 
-    internal class CategorySample
+    internal sealed class CategorySample : IDisposable
     {
         internal readonly long _systemFrequency;
         internal readonly long _timeStamp;
@@ -1394,11 +1403,15 @@ namespace System.Diagnostics
         internal Hashtable _counterTable;
         internal Hashtable _instanceNameTable;
         internal bool _isMultiInstance;
-        private CategoryEntry _entry;
-        private PerformanceCounterLib _library;
+        private readonly CategoryEntry _entry;
+        private readonly PerformanceCounterLib _library;
+        private bool _disposed;
+        private readonly byte[] _data;
 
-        internal CategorySample(ReadOnlySpan<byte> data, CategoryEntry entry, PerformanceCounterLib library)
+        internal CategorySample(byte[] rawData, CategoryEntry entry, PerformanceCounterLib library)
         {
+            _data = rawData;
+            ReadOnlySpan<byte> data = rawData;
             _entry = entry;
             _library = library;
             int categoryIndex = entry.NameIndex;
@@ -1434,7 +1447,7 @@ namespace System.Diagnostics
             }
 
             if (!foundCategory)
-                throw new InvalidOperationException(SR.Format(SR.CantReadCategoryIndex, categoryIndex.ToString(CultureInfo.CurrentCulture)));
+                throw new InvalidOperationException(SR.Format(SR.CantReadCategoryIndex, categoryIndex.ToString()));
 
             ref readonly PERF_OBJECT_TYPE perfObject = ref MemoryMarshal.AsRef<PERF_OBJECT_TYPE>(data.Slice(pos));
 
@@ -1462,20 +1475,20 @@ namespace System.Diagnostics
                 int currentSampleType = samples[index]._counterType;
                 if (!PerformanceCounterLib.IsBaseCounter(currentSampleType))
                 {
-                    // We'll put only non-base counters in the table. 
+                    // We'll put only non-base counters in the table.
                     if (currentSampleType != Interop.Kernel32.PerformanceCounterOptions.PERF_COUNTER_NODATA)
                         _counterTable[samples[index]._nameIndex] = samples[index];
                 }
                 else
                 {
-                    // it's a base counter, try to hook it up to the main counter. 
+                    // it's a base counter, try to hook it up to the main counter.
                     Debug.Assert(index > 0, "Index > 0 because base counters should never be at index 0");
                     if (index > 0)
                         samples[index - 1]._baseCounterDefinitionSample = samples[index];
                 }
             }
 
-            // now set up the InstanceNameTable.  
+            // now set up the InstanceNameTable.
             if (!_isMultiInstance)
             {
                 _instanceNameTable = new Hashtable(1, StringComparer.OrdinalIgnoreCase);
@@ -1531,6 +1544,8 @@ namespace System.Diagnostics
 
         internal string[] GetInstanceNamesFromIndex(int categoryIndex)
         {
+            CheckDisposed();
+
             ReadOnlySpan<byte> data = _library.GetPerformanceData(categoryIndex.ToString(CultureInfo.InvariantCulture));
 
             ref readonly PERF_DATA_BLOCK dataBlock = ref MemoryMarshal.AsRef<PERF_DATA_BLOCK>(data);
@@ -1584,6 +1599,8 @@ namespace System.Diagnostics
 
         internal CounterDefinitionSample GetCounterDefinitionSample(string counter)
         {
+            CheckDisposed();
+
             for (int index = 0; index < _entry.CounterIndexes.Length; ++index)
             {
                 int counterIndex = _entry.CounterIndexes[index];
@@ -1603,7 +1620,7 @@ namespace System.Diagnostics
                                     return multiSample._baseCounterDefinitionSample;
                             }
 
-                            throw new InvalidOperationException(SR.Format(SR.CounterLayout));
+                            throw new InvalidOperationException(SR.CounterLayout);
                         }
                         return sample;
                     }
@@ -1636,6 +1653,26 @@ namespace System.Diagnostics
 
             return data;
         }
+
+        public void Dispose()
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+
+            _library.ReleasePerformanceData(_data);
+        }
+
+        private void CheckDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(SR.ObjectDisposed_CategorySampleClosed, nameof(CategorySample));
+            }
+        }
     }
 
     internal class CounterDefinitionSample
@@ -1646,8 +1683,8 @@ namespace System.Diagnostics
 
         private readonly int _size;
         private readonly int _offset;
-        private long[] _instanceValues;
-        private CategorySample _categorySample;
+        private readonly long[] _instanceValues;
+        private readonly CategorySample _categorySample;
 
         internal CounterDefinitionSample(in PERF_COUNTER_DEFINITION perfCounter, CategorySample categorySample, int instanceNumber)
         {
@@ -1685,7 +1722,7 @@ namespace System.Diagnostics
             if (!_categorySample._instanceNameTable.ContainsKey(instanceName))
             {
                 // Our native dll truncates instance names to 128 characters.  If we can't find the instance
-                // with the full name, try truncating to 128 characters. 
+                // with the full name, try truncating to 128 characters.
                 if (instanceName.Length > SharedPerformanceCounter.InstanceNameMaxLength)
                     instanceName = instanceName.Substring(0, SharedPerformanceCounter.InstanceNameMaxLength);
 

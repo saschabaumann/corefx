@@ -26,7 +26,7 @@ namespace Microsoft.IO
             return span.SequenceEqual(value);
         }
 
-        public unsafe static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
+        public static unsafe string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
             if (action == null)
                 throw new ArgumentNullException(nameof(action));
@@ -42,6 +42,37 @@ namespace Microsoft.IO
             fixed (char* r = result)
             {
                 action(new Span<char>(r, length), state);
+            }
+            return result;
+        }
+
+        internal static unsafe string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1)
+        {
+            var result = new string('\0', checked(str0.Length + str1.Length));
+            fixed (char* resultPtr = result)
+            {
+                var resultSpan = new Span<char>(resultPtr, result.Length);
+
+                str0.CopyTo(resultSpan);
+                str1.CopyTo(resultSpan.Slice(str0.Length));
+            }
+            return result;
+        }
+
+        internal static unsafe string Concat(ReadOnlySpan<char> str0, ReadOnlySpan<char> str1, ReadOnlySpan<char> str2)
+        {
+            var result = new string('\0', checked(str0.Length + str1.Length + str2.Length));
+            fixed (char* resultPtr = result)
+            {
+                var resultSpan = new Span<char>(resultPtr, result.Length);
+
+                str0.CopyTo(resultSpan);
+                resultSpan = resultSpan.Slice(str0.Length);
+
+                str1.CopyTo(resultSpan);
+                resultSpan = resultSpan.Slice(str1.Length);
+
+                str2.CopyTo(resultSpan);
             }
             return result;
         }

@@ -132,7 +132,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (String.IsNullOrEmpty(_displayName))
+                if (string.IsNullOrEmpty(_displayName))
                     GenerateNames();
                 return _displayName;
             }
@@ -241,7 +241,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (String.IsNullOrEmpty(_name))
+                if (string.IsNullOrEmpty(_name))
                     GenerateNames();
                 return _name;
             }
@@ -259,7 +259,7 @@ namespace System.ServiceProcess
                 }
 
                 if (!ServiceBase.ValidServiceName(value))
-                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
+                    throw new ArgumentException(SR.Format(SR.ServiceName, value, ServiceBase.MaxNameLength.ToString()));
 
                 Close();
                 _name = value;
@@ -387,7 +387,7 @@ namespace System.ServiceProcess
                     finally
                     {
                         Marshal.FreeHGlobal(bufPtr);
-                    } 
+                    }
                 }
 
                 return _startType;
@@ -481,14 +481,14 @@ namespace System.ServiceProcess
         {
             GetDataBaseHandleWithConnectAccess();
 
-            if (String.IsNullOrEmpty(_name))
+            if (string.IsNullOrEmpty(_name))
             {
-                // Figure out the _name based on the information we have. 
+                // Figure out the _name based on the information we have.
                 // We must either have _displayName or the constructor parameter _eitherName.
-                string userGivenName = String.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
+                string userGivenName = string.IsNullOrEmpty(_eitherName) ? _displayName : _eitherName;
 
-                if (String.IsNullOrEmpty(userGivenName))
-                    throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString(CultureInfo.CurrentCulture)));
+                if (string.IsNullOrEmpty(userGivenName))
+                    throw new InvalidOperationException(SR.Format(SR.ServiceName, userGivenName, ServiceBase.MaxNameLength.ToString()));
 
                 // Try it as a display name
                 string result = GetServiceKeyName(_serviceManagerHandle, userGivenName);
@@ -514,7 +514,7 @@ namespace System.ServiceProcess
                 _displayName = result;
                 _eitherName = null;
             }
-            else if (String.IsNullOrEmpty(_displayName))
+            else if (string.IsNullOrEmpty(_displayName))
             {
                 // We must have _name
                 string result = GetServiceDisplayName(_serviceManagerHandle, _name);

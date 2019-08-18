@@ -11,7 +11,6 @@ namespace System.IO.Tests
     public class EncryptDecrypt : FileSystemTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetcoreCoreRT)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "File encryption is not supported on this platform.")]
         public static void NullArg_ThrowsException()
         {
@@ -19,7 +18,6 @@ namespace System.IO.Tests
             AssertExtensions.Throws<ArgumentNullException>("path", () => File.Decrypt(null));
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp)]
         [Fact]
         public static void EncryptDecrypt_NotSupported()

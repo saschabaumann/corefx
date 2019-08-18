@@ -12,7 +12,7 @@ namespace System.Net.Mail
     [System.Runtime.CompilerServices.TypeForwardedFrom("System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public class SmtpFailedRecipientsException : SmtpFailedRecipientException, ISerializable
     {
-        private SmtpFailedRecipientException[] _innerExceptions;
+        private readonly SmtpFailedRecipientException[] _innerExceptions;
 
         public SmtpFailedRecipientsException()
         {
@@ -48,7 +48,7 @@ namespace System.Net.Mail
         }
 
         internal SmtpFailedRecipientsException(List<SmtpFailedRecipientException> innerExceptions, bool allFailed) :
-            base(allFailed ? SR.Format(SR.SmtpAllRecipientsFailed) : SR.Format(SR.SmtpRecipientFailed),
+            base(allFailed ? SR.SmtpAllRecipientsFailed : SR.SmtpRecipientFailed,
             innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0].FailedRecipient : null,
             innerExceptions != null && innerExceptions.Count > 0 ? innerExceptions[0] : null)
         {

@@ -37,7 +37,7 @@ public static class XmlDictionaryWriterTest
             actual = sr.ReadToEnd();
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
@@ -58,12 +58,11 @@ public static class XmlDictionaryWriterTest
             var sr = new StreamReader(ms);
             actual = sr.ReadToEnd();
         }
-        
-        Assert.StrictEqual(expect, actual);
+
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_FlushAsync()
     {
         string actual = null;
@@ -72,7 +71,7 @@ public static class XmlDictionaryWriterTest
         string expect = GetExpectString(bytes, byteSize);
         string lastCompletedOperation = null;
         try
-        {            
+        {
             using (var ms = new AsyncMemoryStream())
             {
                 var writer = XmlDictionaryWriter.CreateTextWriter(ms);
@@ -102,7 +101,7 @@ public static class XmlDictionaryWriterTest
                 actual = sr.ReadToEnd();
             }
         }
-        catch(Exception e)
+        catch (Exception e)
         {
             var sb = new StringBuilder();
             sb.AppendLine($"An error occurred: {e.Message}");
@@ -112,12 +111,11 @@ public static class XmlDictionaryWriterTest
             Assert.True(false, sb.ToString());
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
 
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_WriteStartEndElementAsync()
     {
         string actual;
@@ -141,11 +139,10 @@ public static class XmlDictionaryWriterTest
             actual = sr.ReadToEnd();
         }
 
-        Assert.StrictEqual(expect, actual);
+        Assert.Equal(expect, actual);
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Async APIs are available on NetCore only")]
     public static void XmlBaseWriter_CheckAsync_ThrowInvalidOperationException()
     {
         int byteSize = 1024;
@@ -186,12 +183,11 @@ public static class XmlDictionaryWriterTest
             writer.WriteEndElement();
             writer.WriteEndDocument();
             writer.Flush();
-            ms.Position = 0;            
+            ms.Position = 0;
         }
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "is implemented on full framework")]
     public static void CreateMtomReaderWriter_Throw_PNSE()
     {
         using (var stream = new MemoryStream())
@@ -314,7 +310,6 @@ public static class XmlDictionaryWriterTest
     }
 
     [Fact]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "is implemented on full framework")]
     public static void FragmentTest()
     {
         string rwTypeStr = "Text";

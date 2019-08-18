@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
@@ -27,6 +29,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool GuaranteedSendOrdering => true;
         public virtual bool ValidatesArrayArguments => true;
         public virtual bool UsesSync => false;
+        public virtual bool UsesApm => false;
         public virtual bool DisposeDuringOperationResultsInDisposedException => false;
         public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
         public virtual bool SupportsMultiConnect => true;
@@ -128,6 +131,8 @@ namespace System.Net.Sockets.Tests
             Task.Factory.FromAsync(
                 (callback, state) => s.BeginSendTo(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, endPoint, callback, state),
                 s.EndSendTo, null);
+
+        public override bool UsesApm => true;
     }
 
     public class SocketHelperTask : SocketHelperBase
@@ -240,10 +245,12 @@ namespace System.Net.Sockets.Tests
         where T : SocketHelperBase, new()
     {
         private readonly T _socketHelper;
+        public readonly ITestOutputHelper _output;
 
-        public SocketTestHelperBase()
+        public SocketTestHelperBase(ITestOutputHelper output)
         {
             _socketHelper = new T();
+            _output = output;
         }
 
         //
@@ -264,6 +271,7 @@ namespace System.Net.Sockets.Tests
         public bool GuaranteedSendOrdering => _socketHelper.GuaranteedSendOrdering;
         public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
         public bool UsesSync => _socketHelper.UsesSync;
+        public bool UsesApm => _socketHelper.UsesApm;
         public bool DisposeDuringOperationResultsInDisposedException => _socketHelper.DisposeDuringOperationResultsInDisposedException;
         public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
         public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
@@ -275,7 +283,7 @@ namespace System.Net.Sockets.Tests
     // MemberDatas that are generally useful
     //
 
-    public abstract class MemberDatas : RemoteExecutorTestBase
+    public abstract class MemberDatas
     {
         public static readonly object[][] Loopbacks = new[]
         {

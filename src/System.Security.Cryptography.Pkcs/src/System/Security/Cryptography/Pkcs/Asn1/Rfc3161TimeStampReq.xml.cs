@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -9,7 +14,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
     [StructLayout(LayoutKind.Sequential)]
     internal partial struct Rfc3161TimeStampReq
     {
-        private static byte[] s_defaultCertReq = { 0x01, 0x01, 0x00 };
+        private static readonly byte[] s_defaultCertReq = { 0x01, 0x01, 0x00 };
   
         internal int Version;
         internal System.Security.Cryptography.Pkcs.Asn1.MessageImprint MessageImprint;
@@ -18,7 +23,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
         internal bool CertReq;
         internal System.Security.Cryptography.Asn1.X509ExtensionAsn[] Extensions;
       
-#if DEBUG  
+#if DEBUG
         static Rfc3161TimeStampReq()
         {
             Rfc3161TimeStampReq decoded = default;
@@ -132,7 +137,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             if (sequenceReader.HasData && sequenceReader.PeekTag().HasSameClassAndValue(Asn1Tag.Integer))
             {
-                decoded.Nonce = sequenceReader.GetIntegerBytes();
+                decoded.Nonce = sequenceReader.ReadIntegerBytes();
             }
 
 

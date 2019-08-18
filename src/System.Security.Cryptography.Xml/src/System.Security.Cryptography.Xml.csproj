@@ -4,6 +4,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{0544EAE3-0CF2-4EA6-93BE-A9FF8B52724A}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' != 'netstandard'">true</IsPartialFacadeAssembly>
+    <NoWarn>$(NoWarn);CA5384;CA5385</NoWarn>
     <Configurations>net461-Debug;net461-Release;netfx-Debug;netfx-Release;netstandard-Debug;netstandard-Release</Configurations>
   </PropertyGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
@@ -66,7 +67,6 @@
     <Compile Include="System\Security\Cryptography\Xml\SymmetricKeyWrap.cs" />
     <Compile Include="System\Security\Cryptography\Xml\Transform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\TransformChain.cs" />
-    <Compile Include="System\Security\Cryptography\Xml\TransformInputType.cs" />
     <Compile Include="System\Security\Cryptography\Xml\Utils.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDecryptionTransform.cs" />
     <Compile Include="System\Security\Cryptography\Xml\XmlDsigBase64Transform.cs" />
@@ -111,8 +111,5 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Security" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
 </Project>

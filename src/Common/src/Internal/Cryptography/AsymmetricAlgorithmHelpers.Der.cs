@@ -24,8 +24,8 @@ namespace Internal.Cryptography
             Debug.Assert(input.Length % 2 == 0);
             Debug.Assert(input.Length > 1);
 
-            // Input is (r, s), each of them exactly half of the array. 
-            // Output is the DER encoded value of CONSTRUCTEDSEQUENCE(INTEGER(r), INTEGER(s)). 
+            // Input is (r, s), each of them exactly half of the array.
+            // Output is the DER encoded value of CONSTRUCTEDSEQUENCE(INTEGER(r), INTEGER(s)).
             int halfLength = input.Length / 2;
 
             using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
@@ -48,8 +48,8 @@ namespace Internal.Cryptography
             AsnReader reader = new AsnReader(input.AsMemory(inputOffset, inputCount), AsnEncodingRules.DER);
             AsnReader sequenceReader = reader.ReadSequence();
             reader.ThrowIfNotEmpty();
-            ReadOnlySpan<byte> rDer = sequenceReader.GetIntegerBytes().Span;
-            ReadOnlySpan<byte> sDer = sequenceReader.GetIntegerBytes().Span;
+            ReadOnlySpan<byte> rDer = sequenceReader.ReadIntegerBytes().Span;
+            ReadOnlySpan<byte> sDer = sequenceReader.ReadIntegerBytes().Span;
             sequenceReader.ThrowIfNotEmpty();
 
             byte[] response = new byte[2 * size];

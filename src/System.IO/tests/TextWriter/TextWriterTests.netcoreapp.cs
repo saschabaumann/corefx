@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -83,7 +84,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async void WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
@@ -96,7 +97,7 @@ namespace System.IO.Tests
 
         [Theory]
         [MemberData(nameof(GetStringBuilderTestData))]
-        public async void WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
+        public async Task WriteLineAsyncStringBuilderTest(bool isSynchronized, StringBuilder testData)
         {
             using (CharArrayTextWriter ctw = NewTextWriter)
             {
@@ -107,11 +108,38 @@ namespace System.IO.Tests
             }
         }
 
-        // Generate data for TextWriter.Write* methods that take a stringBuilder.  
-        // We test both the synchronized and unsynchronized variation, on strinbuilder swith 0, small and large values.    
+        [Fact]
+        public void DisposeAsync_InvokesDisposeSynchronously()
+        {
+            bool disposeInvoked = false;
+            var tw = new InvokeActionOnDisposeTextWriter() { DisposeAction = () => disposeInvoked = true };
+            Assert.False(disposeInvoked);
+            Assert.True(tw.DisposeAsync().IsCompletedSuccessfully);
+            Assert.True(disposeInvoked);
+        }
+
+        [Fact]
+        public void DisposeAsync_ExceptionReturnedInTask()
+        {
+            Exception e = new FormatException();
+            var tw = new InvokeActionOnDisposeTextWriter() { DisposeAction = () => { throw e; } };
+            ValueTask vt = tw.DisposeAsync();
+            Assert.True(vt.IsFaulted);
+            Assert.Same(e, vt.AsTask().Exception.InnerException);
+        }
+
+        private sealed class InvokeActionOnDisposeTextWriter : TextWriter
+        {
+            public Action DisposeAction;
+            public override Encoding Encoding => Encoding.UTF8;
+            protected override void Dispose(bool disposing) => DisposeAction?.Invoke();
+        }
+
+        // Generate data for TextWriter.Write* methods that take a stringBuilder.
+        // We test both the synchronized and unsynchronized variation, on strinbuilder swith 0, small and large values.
         public static IEnumerable<object[]> GetStringBuilderTestData()
         {
-            // Make a string that has 10 or so 8K chunks (probably).  
+            // Make a string that has 10 or so 8K chunks (probably).
             StringBuilder complexStringBuilder = new StringBuilder();
             for (int i = 0; i < 4000; i++)
                 complexStringBuilder.Append(TestDataProvider.CharData); // CharData ~ 25 chars

@@ -8,31 +8,19 @@ namespace System.Runtime.InteropServices
     {
         // ! Do not add or rearrange fields as the EE depends on this layout.
         //------------------------------------------------------------------
-        private readonly object _wrapper;
+        private readonly object? _wrapper;
         private readonly IntPtr _handle;
         //------------------------------------------------------------------
 
-        public HandleRef(object wrapper, IntPtr handle)
+        public HandleRef(object? wrapper, IntPtr handle)
         {
             _wrapper = wrapper;
             _handle = handle;
         }
 
-        public object Wrapper
-        {
-            get
-            {
-                return _wrapper;
-            }
-        }
+        public object? Wrapper => _wrapper;
 
-        public IntPtr Handle
-        {
-            get
-            {
-                return _handle;
-            }
-        }
+        public IntPtr Handle => _handle;
 
         public static explicit operator IntPtr(HandleRef value)
         {

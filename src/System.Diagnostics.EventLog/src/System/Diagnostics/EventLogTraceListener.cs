@@ -1,4 +1,8 @@
-﻿using System.Globalization;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -7,17 +11,17 @@ namespace System.Diagnostics
     public sealed class EventLogTraceListener : TraceListener
     {
         private bool _nameSet;
-        
+
         public EventLogTraceListener()
         {
         }
-        
+
         public EventLogTraceListener(EventLog eventLog)
             : base(eventLog != null ? eventLog.Source : string.Empty)
         {
             EventLog = eventLog;
         }
-        
+
         public EventLogTraceListener(string source)
         {
             EventLog = new EventLog
@@ -25,13 +29,13 @@ namespace System.Diagnostics
                 Source = source
             };
         }
-        
+
         public EventLog EventLog
         {
             get;
             set;
         }
-        
+
         public override string Name
         {
             get
@@ -71,7 +75,7 @@ namespace System.Diagnostics
         }
 
         public override void Write(string message) => EventLog?.WriteEntry(message);
-        
+
         public override void WriteLine(string message) => Write(message);
 
         [ComVisible(false)]
@@ -148,12 +152,12 @@ namespace System.Diagnostics
         private EventInstance CreateEventInstance(TraceEventType severity, int id)
         {
             // Win32 EventLog has an implicit cap at ushort.MaxValue
-            // We need to cap this explicitly to prevent larger value 
-            // being wrongly casted 
+            // We need to cap this explicitly to prevent larger value
+            // being wrongly casted
             if (id > ushort.MaxValue)
                 id = ushort.MaxValue;
 
-            // Ideally we need to pick a value other than '0' as zero is 
+            // Ideally we need to pick a value other than '0' as zero is
             // a commonly used EventId by most applications
             if (id < ushort.MinValue)
                 id = ushort.MinValue;

@@ -30,6 +30,11 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerAttribute(Type designerType)
         {
+            if (designerType == null)
+            {
+                throw new ArgumentNullException(nameof(designerType));
+            }
+
             DesignerTypeName = designerType.AssemblyQualifiedName;
             DesignerBaseTypeName = typeof(IDesigner).FullName;
         }
@@ -50,7 +55,16 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerAttribute(string designerTypeName, Type designerBaseType)
         {
-            DesignerTypeName = designerTypeName ?? throw new ArgumentNullException(nameof(designerTypeName));
+            if (designerTypeName == null)
+            {
+                throw new ArgumentNullException(nameof(designerTypeName));
+            }
+            if (designerBaseType == null)
+            {
+                throw new ArgumentNullException(nameof(designerBaseType));
+            }
+
+            DesignerTypeName = designerTypeName;
             DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
         }
 
@@ -60,6 +74,15 @@ namespace System.ComponentModel
         /// </summary>
         public DesignerAttribute(Type designerType, Type designerBaseType)
         {
+            if (designerType == null)
+            {
+                throw new ArgumentNullException(nameof(designerType));
+            }
+            if (designerBaseType == null)
+            {
+                throw new ArgumentNullException(nameof(designerBaseType));
+            }
+
             DesignerTypeName = designerType.AssemblyQualifiedName;
             DesignerBaseTypeName = designerBaseType.AssemblyQualifiedName;
         }
@@ -87,7 +110,7 @@ namespace System.ComponentModel
             {
                 if (_typeId == null)
                 {
-                    string baseType = DesignerBaseTypeName;
+                    string baseType = DesignerBaseTypeName ?? string.Empty;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {
@@ -111,6 +134,6 @@ namespace System.ComponentModel
                 && other.DesignerTypeName == DesignerTypeName;
         }
 
-        public override int GetHashCode() => DesignerTypeName.GetHashCode() ^ DesignerBaseTypeName.GetHashCode();
+        public override int GetHashCode() => HashCode.Combine(DesignerBaseTypeName, DesignerTypeName);
     }
 }

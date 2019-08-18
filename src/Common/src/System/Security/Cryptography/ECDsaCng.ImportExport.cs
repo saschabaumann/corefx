@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
             /// <summary>
             ///         ImportParameters will replace the existing key that ECDsaCng is working with by creating a
             ///         new CngKey. If the parameters contains only Q, then only a public key will be imported.
-            ///         If the parameters also contains D, then a full key pair will be imported. 
+            ///         If the parameters also contains D, then a full key pair will be imported.
             ///         The parameters Curve value specifies the type of the curve to import.
             /// </summary>
             /// <exception cref="CryptographicException">
@@ -30,6 +30,8 @@ namespace System.Security.Cryptography
             public override void ImportParameters(ECParameters parameters)
             {
                 parameters.Validate();
+                ThrowIfDisposed();
+
                 ECCurve curve = parameters.Curve;
                 bool includePrivateParameters = (parameters.D != null);
 
@@ -42,14 +44,14 @@ namespace System.Security.Cryptography
                 {
                     // FriendlyName is required; an attempt was already made to default it in ECCurve
                     if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
-                        throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value.ToString()));
+                        throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value.ToString()));
 
                     byte[] ecNamedCurveBlob = ECCng.GetNamedCurveBlob(ref parameters, ecdh: false);
                     ImportKeyBlob(ecNamedCurveBlob, curve.Oid.FriendlyName, includePrivateParameters);
                 }
                 else
                 {
-                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
+                    throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, curve.CurveType.ToString()));
                 }
             }
 
@@ -102,6 +104,8 @@ namespace System.Security.Cryptography
 
             public override void ImportPkcs8PrivateKey(ReadOnlySpan<byte> source, out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportPkcs8PrivateKey(source, out int localRead);
 
                 ProcessPkcs8Response(response);
@@ -113,6 +117,8 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
                     passwordBytes,
                     source,
@@ -127,6 +133,8 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> source,
                 out int bytesRead)
             {
+                ThrowIfDisposed();
+
                 CngPkcs8.Pkcs8Response response = CngPkcs8.ImportEncryptedPkcs8PrivateKey(
                     password,
                     source,

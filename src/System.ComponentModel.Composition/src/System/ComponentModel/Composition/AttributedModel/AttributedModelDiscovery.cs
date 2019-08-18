@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public static ReflectionComposablePartDefinition CreatePartDefinition(Type type, PartCreationPolicyAttribute partCreationPolicy, bool ignoreConstructorImports, ICompositionElement origin)
         {
-            if(type == null)
+            if (type == null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             return new ReflectionComposablePart(definition, attributedPart);
         }
-        
+
         public static ReflectionComposablePart CreatePart(object attributedPart, ReflectionContext reflectionContext)
         {
             if (attributedPart == null)
@@ -66,7 +66,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             var mappedType = reflectionContext.MapType(IntrospectionExtensions.GetTypeInfo(attributedPart.GetType()));
             if (mappedType.Assembly.ReflectionOnly)
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, SR.Argument_ReflectionContextReturnsReflectionOnlyType, nameof(reflectionContext)), nameof(reflectionContext));
+                throw new ArgumentException(SR.Format(SR.Argument_ReflectionContextReturnsReflectionOnlyType, nameof(reflectionContext)), nameof(reflectionContext));
             }
 
             ReflectionComposablePartDefinition definition = AttributedModelDiscovery.CreatePartDefinition(mappedType, PartCreationPolicyAttribute.Shared, true, (ICompositionElement)null);

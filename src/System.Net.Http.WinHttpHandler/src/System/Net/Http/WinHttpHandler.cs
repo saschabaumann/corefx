@@ -60,7 +60,7 @@ namespace System.Net.Http
         [ThreadStatic]
         private static StringBuilder t_requestHeadersBuilder;
 
-        private object _lockObject = new object();
+        private readonly object _lockObject = new object();
         private bool _doManualDecompressionCheck = false;
         private WinInetProxyHelper _proxyHelper = null;
         private bool _automaticRedirection = HttpHandlerDefaults.DefaultAutomaticRedirection;
@@ -94,7 +94,7 @@ namespace System.Net.Http
         private volatile bool _operationStarted;
         private volatile bool _disposed;
         private SafeWinHttpHandle _sessionHandle;
-        private WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
+        private readonly WinHttpAuthHelper _authHelper = new WinHttpAuthHelper();
 
         public WinHttpHandler()
         {
@@ -557,7 +557,7 @@ namespace System.Net.Http
             Task.Factory.StartNew(
                 s => {
                     var whrs = (WinHttpRequestState)s;
-                    whrs.Handler.StartRequest(whrs);
+                    _ = whrs.Handler.StartRequestAsync(whrs);
                 },
                 state,
                 CancellationToken.None,
@@ -789,7 +789,7 @@ namespace System.Net.Http
             }
         }
 
-        private async void StartRequest(WinHttpRequestState state)
+        private async Task StartRequestAsync(WinHttpRequestState state)
         {
             if (state.CancellationToken.IsCancellationRequested)
             {
@@ -951,7 +951,7 @@ namespace System.Net.Http
             uint optionData = 0;
             SslProtocols sslProtocols =
                 (_sslProtocols == SslProtocols.None) ? SecurityProtocol.DefaultSecurityProtocols : _sslProtocols;
-            
+
 #pragma warning disable 0618 // SSL2/SSL3 are deprecated
             if ((sslProtocols & SslProtocols.Ssl2) != 0)
             {
@@ -977,6 +977,17 @@ namespace System.Net.Http
             if ((sslProtocols & SslProtocols.Tls12) != 0)
             {
                 optionData |= Interop.WinHttp.WINHTTP_FLAG_SECURE_PROTOCOL_TLS1_2;
+            }
+
+            // As of Win10RS5 there's no public constant for WinHTTP + TLS 1.3
+            // This library builds against netstandard, which doesn't define the Tls13 enum field.
+
+            // If only unknown values (e.g. TLS 1.3) were asked for, report ERROR_INVALID_PARAMETER.
+            if (optionData == 0)
+            {
+                throw WinHttpException.CreateExceptionUsingError(
+                    unchecked((int)Interop.WinHttp.ERROR_INVALID_PARAMETER),
+                    nameof(SetSessionHandleTlsOptions));
             }
 
             SetWinHttpOption(sessionHandle, Interop.WinHttp.WINHTTP_OPTION_SECURE_PROTOCOLS, ref optionData);
@@ -1382,8 +1393,12 @@ namespace System.Net.Http
             using (var requestStream = new WinHttpRequestStream(state, chunkedModeForSend))
             {
                 await state.RequestMessage.Content.CopyToAsync(
-                    requestStream,
-                    state.TransportContext).ConfigureAwait(false);
+#if HTTP_DLL
+                    requestStream, state.TransportContext, state.CancellationToken
+#else
+                    requestStream, state.TransportContext
+#endif
+                    ).ConfigureAwait(false);
                 await requestStream.EndUploadAsync(state.CancellationToken).ConfigureAwait(false);
             }
         }

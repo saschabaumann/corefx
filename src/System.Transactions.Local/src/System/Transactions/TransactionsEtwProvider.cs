@@ -34,15 +34,6 @@ namespace System.Transactions
         Promote = 5
     }
 
-    internal enum EnlistmentCallback
-    {
-        Done = 0,
-        Prepared = 1,
-        ForceRollback = 2,
-        Committed = 3,
-        Aborted = 4,
-        InDoubt = 5
-    }
     internal enum TransactionScopeResult
     {
         CreatedTransaction = 0,
@@ -79,7 +70,7 @@ namespace System.Transactions
         /// Defines the singleton instance for the Transactions ETW provider.
         /// The Transactions provider GUID is {8ac2d80a-1f1a-431b-ace4-bff8824aef0b}.
         /// </summary>
-        /// 
+        ///
 
 
         internal static readonly TransactionsEtwProvider Log = new TransactionsEtwProvider();
@@ -90,7 +81,7 @@ namespace System.Transactions
         private const EventKeywords ALL_KEYWORDS = (EventKeywords)(-1);
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Transactions Event IDs (must be unique)
         //
 
@@ -176,13 +167,13 @@ namespace System.Transactions
         private const int TRANSACTIONSTATE_ENLIST_EVENTID = 40;
 
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Transactions Events
         //
 
         private const string NullInstance = "(null)";
         //-----------------------------------------------------------------------------------
-        //        
+        //
         // Transactions Events
         //
         [NonEvent]
@@ -420,7 +411,7 @@ namespace System.Transactions
 
         #region Enlistment
         /// <summary>Trace an event for enlistment status.</summary>
-        /// <param name="enlisment">The enlistment to report status.</param>
+        /// <param name="enlistment">The enlistment to report status.</param>
         /// <param name="notificationCall">The notification call on the enlistment.</param>
         [NonEvent]
         internal void EnlistmentStatus(InternalEnlistment enlistment, NotificationCall notificationCall)
@@ -446,7 +437,7 @@ namespace System.Transactions
 
         #region Enlistment Done
         /// <summary>Trace an event for enlistment done.</summary>
-        /// <param name="enlisment">The enlistment done.</param>
+        /// <param name="enlistment">The enlistment done.</param>
         [NonEvent]
         internal void EnlistmentDone(InternalEnlistment enlistment)
         {
@@ -471,7 +462,7 @@ namespace System.Transactions
 
         #region Enlistment Prepared
         /// <summary>Trace an event for enlistment prepared.</summary>
-        /// <param name="enlisment">The enlistment prepared.</param>
+        /// <param name="enlistment">The enlistment prepared.</param>
         [NonEvent]
         internal void EnlistmentPrepared(InternalEnlistment enlistment)
         {
@@ -778,7 +769,7 @@ namespace System.Transactions
 
         #region TransactionManager Reenlist
         /// <summary>Trace an event when reenlist transactionmanager.</summary>
-        /// <param name="resourceMangerID">The resource manger ID.</param>
+        /// <param name="resourceManagerID">The resource manager ID.</param>
         [NonEvent]
         internal void TransactionManagerReenlist(Guid resourceManagerID)
         {
@@ -798,7 +789,7 @@ namespace System.Transactions
 
         #region TransactionManager Recovery Complete
         /// <summary>Trace an event when transactionmanager recovery complete.</summary>
-        /// <param name="resourceMangerID">The resource manger ID.</param>
+        /// <param name="resourceManagerID">The resource manager ID.</param>
         [NonEvent]
         internal void TransactionManagerRecoveryComplete(Guid resourceManagerID)
         {
@@ -1165,7 +1156,7 @@ namespace System.Transactions
             public const EventKeywords TraceDistributed = (EventKeywords)0x0004;
         }
 
-        void SetActivityId(string str)
+        private void SetActivityId(string str)
         {
             Guid guid = Guid.Empty;
 

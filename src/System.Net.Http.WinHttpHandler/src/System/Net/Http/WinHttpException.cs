@@ -6,9 +6,11 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Net.Http
 {
+    [Serializable]
     internal class WinHttpException : Win32Exception
     {
         public WinHttpException(int error, string message) : base(error, message)
@@ -16,29 +18,29 @@ namespace System.Net.Http
             this.HResult = ConvertErrorCodeToHR(error);
         }
 
+        public WinHttpException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
         public WinHttpException(int error, string message, Exception innerException) : base(message, innerException)
         {
             this.HResult = ConvertErrorCodeToHR(error);
         }
 
-        public static int ConvertErrorCodeToHR(int error)
-        {
+        public static int ConvertErrorCodeToHR(int error) =>
             // This method allows common error detection code to be used by consumers
             // of HttpClient. This method converts the ErrorCode returned by WinHTTP
-            // to the same HRESULT value as is provided in the .Net Native implementation
+            // to the same HRESULT value as is provided in the .NET Native implementation
             // of HttpClient under the same error conditions. Clients would access
             // HttpRequestException.InnerException.HRESULT to discover what caused
             // the exception.
-            switch (unchecked((uint)error))
+            unchecked((uint)error) switch
             {
-                case Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR:
-                    return unchecked((int)Interop.WinHttp.WININET_E_CONNECTION_RESET);
-                default:
-                    // Marshal.GetHRForLastWin32Error can't be used as not all error codes originate from native
-                    // code.
-                    return Interop.HRESULT_FROM_WIN32(error);
-            }
-        }
+                Interop.WinHttp.ERROR_WINHTTP_CONNECTION_ERROR => unchecked((int)Interop.WinHttp.WININET_E_CONNECTION_RESET),
+
+                // Marshal.GetHRForLastWin32Error can't be used as not all error codes originate from native code.
+                _ => Interop.HRESULT_FROM_WIN32(error),
+            };
 
         public static void ThrowExceptionUsingLastError(string nameOfCalledFunction)
         {
@@ -70,7 +72,7 @@ namespace System.Net.Http
             Debug.Assert(!string.IsNullOrEmpty(nameOfCalledFunction));
 
             // Look up specific error message in WINHTTP.DLL since it is not listed in default system resources
-            // and thus can't be found by default .Net interop.
+            // and thus can't be found by default .NET interop.
             IntPtr moduleHandle = Interop.Kernel32.GetModuleHandle(Interop.Libraries.WinHttp);
             string httpError = Interop.Kernel32.GetMessage(error, moduleHandle);
 

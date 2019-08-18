@@ -41,6 +41,11 @@ Direct shim to OBJ_sn2nid.
 DLLEXPORT int32_t CryptoNative_ObjSn2Nid(const char* sn);
 
 /*
+Direct shim to OBJ_txt2nid.
+*/
+DLLEXPORT int32_t CryptoNative_ObjTxt2Nid(const char* sn);
+
+/*
 Direct shim to OBJ_nid2obj.
 */
 DLLEXPORT const ASN1_OBJECT* CryptoNative_ObjNid2Obj(int32_t nid);
@@ -59,11 +64,6 @@ DLLEXPORT ASN1_BIT_STRING* CryptoNative_DecodeAsn1BitString(const uint8_t* buf, 
 Direct shim to ASN1_BIT_STRING_free.
 */
 DLLEXPORT void CryptoNative_Asn1BitStringFree(ASN1_STRING* a);
-
-/*
-Shims the d2i_ASN1_OCTET_STRING method and makes it easier to invoke from managed code.
-*/
-DLLEXPORT ASN1_OCTET_STRING* CryptoNative_DecodeAsn1OctetString(const uint8_t* buf, int32_t len);
 
 /*
 Direct shim to ASN1_OCTET_STRING_new.

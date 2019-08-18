@@ -420,14 +420,7 @@ namespace Internal.Cryptography.Pal
                         break;
 
                     default:
-                        Debug.Fail(
-                            string.Format(
-                                "Invalid parser state. Position {0}, State {1}, Character {2}, String \"{3}\"",
-                                pos,
-                                state,
-                                c,
-                                stringForm));
-
+                        Debug.Fail($"Invalid parser state. Position {pos}, State {state}, Character {c}, String \"{stringForm}\"");
                         throw new CryptographicException(SR.Cryptography_Invalid_X500Name);
                 }
 
@@ -565,7 +558,7 @@ namespace Internal.Cryptography.Pal
                 {
                     writer.WriteCharacterString(UniversalTagNumber.UTF8String, charValue);
                 }
-                
+
                 writer.PopSequence();
                 writer.PopSetOf();
                 return writer.Encode();

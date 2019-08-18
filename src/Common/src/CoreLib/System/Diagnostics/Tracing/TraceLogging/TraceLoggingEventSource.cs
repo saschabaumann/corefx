@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 // This program uses code hyperlinks available as part of the HyperAddin Visual Studio plug-in.
-// It is available from http://www.codeplex.com/hyperAddin 
+// It is available from http://www.codeplex.com/hyperAddin
 
 #if PLATFORM_WINDOWS
 #define FEATURE_MANAGED_ETW
@@ -20,6 +20,7 @@ using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
 #endif
 
 using System;
+using System.Diagnostics;
 using System.Resources;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -44,7 +45,7 @@ namespace System.Diagnostics.Tracing
     public partial class EventSource
     {
 #if FEATURE_MANAGED_ETW
-        private byte[] providerMetadata;
+        private byte[] providerMetadata = null!;
 #endif
 
 #if FEATURE_PERFTRACING
@@ -69,7 +70,7 @@ namespace System.Diagnostics.Tracing
         /// The name of the event source. Must not be null.
         /// </param>
         /// <param name="config">
-        /// Configuration options for the EventSource as a whole. 
+        /// Configuration options for the EventSource as a whole.
         /// </param>
         public EventSource(
             string eventSourceName,
@@ -78,25 +79,25 @@ namespace System.Diagnostics.Tracing
 
         /// <summary>
         /// Construct an EventSource with a given name for non-contract based events (e.g. those using the Write() API).
-        /// 
-        /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).   
+        ///
+        /// Also specify a list of key-value pairs called traits (you must pass an even number of strings).
         /// The first string is the key and the second is the value.   These are not interpreted by EventSource
-        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).   
+        /// itself but may be interpreted the listeners.  Can be fetched with GetTrait(string).
         /// </summary>
         /// <param name="eventSourceName">
         /// The name of the event source. Must not be null.
         /// </param>
         /// <param name="config">
-        /// Configuration options for the EventSource as a whole. 
+        /// Configuration options for the EventSource as a whole.
         /// </param>
         /// <param name="traits">A collection of key-value strings (must be an even number).</param>
         public EventSource(
             string eventSourceName,
             EventSourceSettings config,
-            params string[] traits)
+            params string[]? traits)
             : this(
                 eventSourceName == null ? new Guid() : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
-                eventSourceName,
+                eventSourceName!,
                 config, traits)
         {
             if (eventSourceName == null)
@@ -109,14 +110,9 @@ namespace System.Diagnostics.Tracing
         /// Writes an event with no fields and default options.
         /// (Native API: EventWriteTransfer)
         /// </summary>
-        /// <param name="eventName">The name of the event. Must not be null.</param>
-        public unsafe void Write(string eventName)
+        /// <param name="eventName">The name of the event.</param>
+        public unsafe void Write(string? eventName)
         {
-            if (eventName == null)
-            {
-                throw new ArgumentNullException(nameof(eventName));
-            }
-
             if (!this.IsEnabled())
             {
                 return;
@@ -130,18 +126,13 @@ namespace System.Diagnostics.Tracing
         /// Writes an event with no fields.
         /// (Native API: EventWriteTransfer)
         /// </summary>
-        /// <param name="eventName">The name of the event. Must not be null.</param>
+        /// <param name="eventName">The name of the event.</param>
         /// <param name="options">
         /// Options for the event, such as the level, keywords, and opcode. Unset
         /// options will be set to default values.
         /// </param>
-        public unsafe void Write(string eventName, EventSourceOptions options)
+        public unsafe void Write(string? eventName, EventSourceOptions options)
         {
-            if (eventName == null)
-            {
-                throw new ArgumentNullException(nameof(eventName));
-            }
-
             if (!this.IsEnabled())
             {
                 return;
@@ -170,7 +161,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
         public unsafe void Write<T>(
-            string eventName,
+            string? eventName,
             T data)
         {
             if (!this.IsEnabled())
@@ -206,7 +197,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
         public unsafe void Write<T>(
-            string eventName,
+            string? eventName,
             EventSourceOptions options,
             T data)
         {
@@ -244,7 +235,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
         public unsafe void Write<T>(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
             ref T data)
         {
@@ -259,7 +250,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Writes an event.
         /// This overload is meant for clients that need to manipuate the activityId
-        /// and related ActivityId for the event.  
+        /// and related ActivityId for the event.
         /// </summary>
         /// <typeparam name="T">
         /// The type that defines the event and its payload. This must be an
@@ -289,7 +280,7 @@ namespace System.Diagnostics.Tracing
         /// create the fields of the event.
         /// </param>
         public unsafe void Write<T>(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
             ref Guid activityId,
             ref Guid relatedActivityId,
@@ -335,7 +326,7 @@ namespace System.Diagnostics.Tracing
         /// saved. It should not be recreated for each event.
         /// </param>
         /// <param name="activityID">
-        /// A pointer to the activity ID GUID to log 
+        /// A pointer to the activity ID GUID to log
         /// </param>
         /// <param name="childActivityID">
         /// A pointer to the child activity ID to log (can be null) </param>
@@ -345,12 +336,12 @@ namespace System.Diagnostics.Tracing
         /// eventTypes parameter.
         /// </param>
         private unsafe void WriteMultiMerge(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
             TraceLoggingEventTypes eventTypes,
              Guid* activityID,
              Guid* childActivityID,
-            params object[] values)
+            params object?[] values)
         {
             if (!this.IsEnabled())
             {
@@ -374,8 +365,8 @@ namespace System.Diagnostics.Tracing
         /// combined properties of any number of values. This method is
         /// intended for use in advanced logging scenarios that support a
         /// dynamic set of event context providers.
-        /// Attention: This API does not check whether the event is enabled or not. 
-        /// Please use WriteMultiMerge to avoid spending CPU cycles for events that are 
+        /// Attention: This API does not check whether the event is enabled or not.
+        /// Please use WriteMultiMerge to avoid spending CPU cycles for events that are
         /// not enabled.
         /// </summary>
         /// <param name="eventName">
@@ -394,7 +385,7 @@ namespace System.Diagnostics.Tracing
         /// saved. It should not be recreated for each event.
         /// </param>
         /// <param name="activityID">
-        /// A pointer to the activity ID GUID to log 
+        /// A pointer to the activity ID GUID to log
         /// </param>
         /// <param name="childActivityID">
         /// A pointer to the child activity ID to log (can be null)
@@ -405,12 +396,12 @@ namespace System.Diagnostics.Tracing
         /// eventTypes parameter.
         /// </param>
         private unsafe void WriteMultiMergeInner(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
             TraceLoggingEventTypes eventTypes,
             Guid* activityID,
             Guid* childActivityID,
-            params object[] values)
+            params object?[] values)
         {
 #if FEATURE_MANAGED_ETW
             int identity = 0;
@@ -427,7 +418,7 @@ namespace System.Diagnostics.Tracing
                 ? options.keywords
                 : eventTypes.keywords;
 
-            var nameInfo = eventTypes.GetNameInfo(eventName ?? eventTypes.Name, tags);
+            NameInfo nameInfo = eventTypes.GetNameInfo(eventName ?? eventTypes.Name, tags);
             if (nameInfo == null)
             {
                 return;
@@ -442,13 +433,13 @@ namespace System.Diagnostics.Tracing
             IntPtr eventHandle = IntPtr.Zero;
 #endif
 
-            var pinCount = eventTypes.pinCount;
-            var scratch = stackalloc byte[eventTypes.scratchSize];
-            var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
-            for(int i = 0; i < eventTypes.dataCount + 3; i++)
+            int pinCount = eventTypes.pinCount;
+            byte* scratch = stackalloc byte[eventTypes.scratchSize];
+            EventData* descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+            for (int i = 0; i < eventTypes.dataCount + 3; i++)
                 descriptors[i] = default;
 
-            var pins = stackalloc GCHandle[pinCount];
+            GCHandle* pins = stackalloc GCHandle[pinCount];
             for (int i = 0; i < pinCount; i++)
                 pins[i] = default;
 
@@ -476,7 +467,7 @@ namespace System.Diagnostics.Tracing
 
                     for (int i = 0; i < eventTypes.typeInfos.Length; i++)
                     {
-                        var info = eventTypes.typeInfos[i];
+                        TraceLoggingTypeInfo info = eventTypes.typeInfos[i];
                         info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(values[i]));
                     }
 
@@ -517,18 +508,18 @@ namespace System.Diagnostics.Tracing
         /// saved. It should not be recreated for each event.
         /// </param>
         /// <param name="activityID">
-        /// A pointer to the activity ID GUID to log 
+        /// A pointer to the activity ID GUID to log
         /// </param>
         /// <param name="childActivityID">
         /// A pointer to the child activity ID to log (can be null)
-        /// </param> 
+        /// </param>
         /// <param name="data">
         /// The previously serialized values to include in the event. Must not be null.
-        /// The number and types of the values must match the number and types of the 
+        /// The number and types of the values must match the number and types of the
         /// fields described by the eventTypes parameter.
         /// </param>
         internal unsafe void WriteMultiMerge(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
             TraceLoggingEventTypes eventTypes,
             Guid* activityID,
@@ -544,7 +535,7 @@ namespace System.Diagnostics.Tracing
             fixed (EventSourceOptions* pOptions = &options)
             {
                 EventDescriptor descriptor;
-                var nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
+                NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
                 if (nameInfo == null)
                 {
                     return;
@@ -558,10 +549,10 @@ namespace System.Diagnostics.Tracing
 #endif
 
                 // We make a descriptor for each EventData, and because we morph strings to counted strings
-                // we may have 2 for each arg, so we allocate enough for this.  
-                var descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
-                var descriptors = stackalloc EventData[descriptorsLength];
-                for(int i = 0; i < descriptorsLength; i++)
+                // we may have 2 for each arg, so we allocate enough for this.
+                int descriptorsLength = eventTypes.dataCount + eventTypes.typeInfos.Length * 2 + 3;
+                EventData* descriptors = stackalloc EventData[descriptorsLength];
+                for (int i = 0; i < descriptorsLength; i++)
                     descriptors[i] = default;
 
                 fixed (byte*
@@ -600,9 +591,9 @@ namespace System.Diagnostics.Tracing
         }
 
         private unsafe void WriteImpl(
-            string eventName,
+            string? eventName,
             ref EventSourceOptions options,
-            object data,
+            object? data,
             Guid* pActivityId,
             Guid* pRelatedActivityId,
             TraceLoggingEventTypes eventTypes)
@@ -613,7 +604,7 @@ namespace System.Diagnostics.Tracing
                 {
                     EventDescriptor descriptor;
                     options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
-                    var nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
+                    NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out descriptor);
                     if (nameInfo == null)
                     {
                         return;
@@ -627,13 +618,13 @@ namespace System.Diagnostics.Tracing
 #endif
 
 #if FEATURE_MANAGED_ETW
-                    var pinCount = eventTypes.pinCount;
-                    var scratch = stackalloc byte[eventTypes.scratchSize];
-                    var descriptors = stackalloc EventData[eventTypes.dataCount + 3];
-                    for(int i=0; i<eventTypes.dataCount + 3; i++)
+                    int pinCount = eventTypes.pinCount;
+                    byte* scratch = stackalloc byte[eventTypes.scratchSize];
+                    EventData* descriptors = stackalloc EventData[eventTypes.dataCount + 3];
+                    for (int i = 0; i < eventTypes.dataCount + 3; i++)
                         descriptors[i] = default;
 
-                    var pins = stackalloc GCHandle[pinCount];
+                    GCHandle* pins = stackalloc GCHandle[pinCount];
                     for (int i = 0; i < pinCount; i++)
                         pins[i] = default;
 
@@ -659,10 +650,12 @@ namespace System.Diagnostics.Tracing
                         {
                             if (opcode == EventOpcode.Start)
                             {
+                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Start when eventName is null");
                                 m_activityTracker.OnStart(m_name, eventName, 0, ref activityId, ref relatedActivityId, options.ActivityOptions);
                             }
                             else if (opcode == EventOpcode.Stop)
                             {
+                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Stop when eventName is null");
                                 m_activityTracker.OnStop(m_name, eventName, 0, ref activityId);
                             }
                             if (activityId != Guid.Empty)
@@ -682,7 +675,7 @@ namespace System.Diagnostics.Tracing
                                 pins,
                                 pinCount);
 
-                            var info = eventTypes.typeInfos[0];
+                            TraceLoggingTypeInfo info = eventTypes.typeInfos[0];
                             info.WriteData(TraceLoggingDataCollector.Instance, info.PropertyValueFactory(data));
 
                             this.WriteEventRaw(
@@ -698,7 +691,7 @@ namespace System.Diagnostics.Tracing
                             // TODO enable filtering for listeners.
                             if (m_Dispatchers != null)
                             {
-                                var eventData = (EventPayload)(eventTypes.typeInfos[0].GetData(data));
+                                var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
                                 WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
                             }
 
@@ -728,7 +721,7 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private unsafe void WriteToAllListeners(string eventName, ref EventDescriptor eventDescriptor, EventTags tags, Guid* pActivityId, Guid* pChildActivityId, EventPayload payload)
+        private unsafe void WriteToAllListeners(string? eventName, ref EventDescriptor eventDescriptor, EventTags tags, Guid* pActivityId, Guid* pChildActivityId, EventPayload? payload)
         {
             EventWrittenEventArgs eventCallbackArgs = new EventWrittenEventArgs(this);
             eventCallbackArgs.EventName = eventName;
@@ -746,11 +739,11 @@ namespace System.Diagnostics.Tracing
 
             if (payload != null)
             {
-                eventCallbackArgs.Payload = new ReadOnlyCollection<object>((IList<object>)payload.Values);
+                eventCallbackArgs.Payload = new ReadOnlyCollection<object?>((IList<object?>)payload.Values);
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
             }
 
-            DispatchToAllListeners(-1, pActivityId, eventCallbackArgs);
+            DispatchToAllListeners(-1, eventCallbackArgs);
         }
 
 #if (!ES_BUILD_PCL && !ES_BUILD_PN)
@@ -797,17 +790,17 @@ namespace System.Diagnostics.Tracing
                         }
                         string value = m_traits[i + 1];
                         int lenPos = traitMetaData.Count;
-                        traitMetaData.Add(0);                                           // Emit size (to be filled in later) 
+                        traitMetaData.Add(0);                                           // Emit size (to be filled in later)
                         traitMetaData.Add(0);
                         traitMetaData.Add(traitNum);                                    // Emit Trait number
-                        var valueLen = AddValueToMetaData(traitMetaData, value) + 3;    // Emit the value bytes +3 accounts for 3 bytes we emited above.  
+                        int valueLen = AddValueToMetaData(traitMetaData, value) + 3;    // Emit the value bytes +3 accounts for 3 bytes we emited above.
                         traitMetaData[lenPos] = unchecked((byte)valueLen);              // Fill in size
                         traitMetaData[lenPos + 1] = unchecked((byte)(valueLen >> 8));
                     }
                 }
                 providerMetadata = Statics.MetadataForString(this.Name, 0, traitMetaData.Count, 0);
                 int startPos = providerMetadata.Length - traitMetaData.Count;
-                foreach (var b in traitMetaData)
+                foreach (byte b in traitMetaData)
                     providerMetadata[startPos++] = b;
             }
             else
@@ -831,7 +824,7 @@ namespace System.Diagnostics.Tracing
             {
                 for (int i = 1; i < value.Length; i++)
                 {
-                    if (value[i] != ' ')        // Skip spaces between bytes.  
+                    if (value[i] != ' ')        // Skip spaces between bytes.
                     {
                         if (!(i + 1 < value.Length))
                         {
@@ -842,7 +835,7 @@ namespace System.Diagnostics.Tracing
                     }
                 }
             }
-            else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation). 
+            else if ('A' <= firstChar || ' ' == firstChar)  // Is it alphabetic or space (excludes digits and most punctuation).
             {
                 metaData.AddRange(Encoding.UTF8.GetBytes(value));
             }
@@ -855,7 +848,7 @@ namespace System.Diagnostics.Tracing
         }
 
         /// <summary>
-        /// Returns a value 0-15 if 'c' is a hexadecimal digit.   If  it throws an argument exception.  
+        /// Returns a value 0-15 if 'c' is a hexadecimal digit.   If  it throws an argument exception.
         /// </summary>
         private static int HexDigit(char c)
         {
@@ -871,17 +864,17 @@ namespace System.Diagnostics.Tracing
             {
                 return (c - 'A' + 10);
             }
-            
+
             throw new ArgumentException(SR.Format(SR.EventSource_BadHexDigit, c), "traits");
         }
 
-        private NameInfo UpdateDescriptor(
-            string name,
+        private NameInfo? UpdateDescriptor(
+            string? name,
             TraceLoggingEventTypes eventInfo,
             ref EventSourceOptions options,
             out EventDescriptor descriptor)
         {
-            NameInfo nameInfo = null;
+            NameInfo? nameInfo = null;
             int identity = 0;
             byte level = (options.valuesSet & EventSourceOptions.levelSet) != 0
                 ? options.level

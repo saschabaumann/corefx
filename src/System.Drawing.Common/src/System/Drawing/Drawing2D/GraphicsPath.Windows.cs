@@ -15,6 +15,8 @@ namespace System.Drawing.Drawing2D
     {
         internal IntPtr _nativePath;
 
+        private const float Flatness = (float)2.0 / (float)3.0;
+
         public GraphicsPath() : this(FillMode.Alternate) { }
 
         public GraphicsPath(FillMode fillMode)
@@ -89,12 +91,12 @@ namespace System.Drawing.Drawing2D
                 try
                 {
 #if DEBUG
-                    int status =
+                    int status = !Gdip.Initialized ? Gdip.Ok :
 #endif
                     Gdip.GdipDeletePath(new HandleRef(this, _nativePath));
 #if DEBUG
                     Debug.Assert(status == Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
-#endif        
+#endif
                 }
                 catch (Exception ex)
                 {
@@ -700,17 +702,9 @@ namespace System.Drawing.Drawing2D
                 flatness));
         }
 
-        public void Widen(Pen pen)
-        {
-            const float flatness = (float)2.0 / (float)3.0;
-            Widen(pen, null, flatness);
-        }
+        public void Widen(Pen pen) => Widen(pen, null, Flatness);
 
-        public void Widen(Pen pen, Matrix matrix)
-        {
-            const float flatness = (float)2.0 / (float)3.0;
-            Widen(pen, matrix, flatness);
-        }
+        public void Widen(Pen pen, Matrix matrix) => Widen(pen, matrix, Flatness);
 
         public void Widen(Pen pen, Matrix matrix, float flatness)
         {

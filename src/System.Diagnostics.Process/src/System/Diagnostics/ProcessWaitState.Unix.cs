@@ -20,7 +20,7 @@ namespace System.Diagnostics
     //   process can retrieve completion information about that process.
     // - There is no good Unix equivalent to asynchronously be notified of a non-child process' exit, which means such
     //   support needs to be layered on top of kill.
-    // 
+    //
     // As a result, we have the following scheme:
     // - We maintain a static/shared table that maps process ID to ProcessWaitState objects.
     //   Access to this table requires taking a global lock, so we try to minimize the number of
@@ -55,14 +55,14 @@ namespace System.Diagnostics
         {
             internal ProcessWaitState _state;
 
-            internal Holder(int processId, bool isNewChild = false)
+            internal Holder(int processId, bool isNewChild = false, bool usesTerminal = false)
             {
-                _state = ProcessWaitState.AddRef(processId, isNewChild);
+                _state = ProcessWaitState.AddRef(processId, isNewChild, usesTerminal);
             }
 
             ~Holder()
             {
-                // Don't try to Dispose resources (like ManualResetEvents) if 
+                // Don't try to Dispose resources (like ManualResetEvents) if
                 // the process is shutting down.
                 if (_state != null && !Environment.HasShutdownStarted)
                 {
@@ -99,7 +99,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="processId">The process ID for which we need wait state.</param>
         /// <returns>The wait state object.</returns>
-        internal static ProcessWaitState AddRef(int processId, bool isNewChild)
+        internal static ProcessWaitState AddRef(int processId, bool isNewChild, bool usesTerminal)
         {
             lock (s_childProcessWaitStates)
             {
@@ -109,7 +109,7 @@ namespace System.Diagnostics
                     // When the PID is recycled for a new child, we remove the old child.
                     s_childProcessWaitStates.Remove(processId);
 
-                    pws = new ProcessWaitState(processId, isChild: true);
+                    pws = new ProcessWaitState(processId, isChild: true, usesTerminal);
                     s_childProcessWaitStates.Add(processId, pws);
                     pws._outstandingRefCount++; // For Holder
                     pws._outstandingRefCount++; // Decremented in CheckChildren
@@ -143,7 +143,7 @@ namespace System.Diagnostics
                         }
                         if (pws == null)
                         {
-                            pws = new ProcessWaitState(processId, isChild: false, exitTime);
+                            pws = new ProcessWaitState(processId, isChild: false, usesTerminal: false, exitTime);
                             s_processWaitStates.Add(processId, pws);
                         }
                         pws._outstandingRefCount++;
@@ -196,6 +196,8 @@ namespace System.Diagnostics
         private readonly int _processId;
         /// <summary>Associated process is a child process.</summary>
         private readonly bool _isChild;
+        /// <summary>Associated process is a child that can use the terminal.</summary>
+        private readonly bool _usesTerminal;
 
         /// <summary>If a wait operation is in progress, the Task that represents it; otherwise, null.</summary>
         private Task _waitInProgress;
@@ -216,11 +218,12 @@ namespace System.Diagnostics
 
         /// <summary>Initialize the wait state object.</summary>
         /// <param name="processId">The associated process' ID.</param>
-        private ProcessWaitState(int processId, bool isChild, DateTime exitTime = default)
+        private ProcessWaitState(int processId, bool isChild, bool usesTerminal, DateTime exitTime = default)
         {
             Debug.Assert(processId >= 0);
             _processId = processId;
             _isChild = isChild;
+            _usesTerminal = usesTerminal;
             _exitTime = exitTime;
         }
 
@@ -528,7 +531,7 @@ namespace System.Diagnostics
                         // Wait
                         try
                         {
-                            await Task.Delay(pollingIntervalMs, cancellationToken); // no need for ConfigureAwait(false) as we're in a Task.Run
+                            await Task.Delay(pollingIntervalMs, cancellationToken).ConfigureAwait(false);
                             pollingIntervalMs = Math.Min(pollingIntervalMs * 2, MaxPollingIntervalMs);
                         }
                         catch (OperationCanceledException) { }
@@ -562,7 +565,14 @@ namespace System.Diagnostics
                 {
                     _exitCode = exitCode;
 
+                    if (_usesTerminal)
+                    {
+                        // Update terminal settings before calling SetExited.
+                        Process.ConfigureTerminalForChildProcesses(-1);
+                    }
+
                     SetExited();
+
                     return true;
                 }
                 else if (waitResult == 0)
@@ -625,7 +635,7 @@ namespace System.Diagnostics
 
                 if (checkAll)
                 {
-                    // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates. 
+                    // We track things to unref so we don't invalidate our iterator by changing s_childProcessWaitStates.
                     ProcessWaitState firstToRemove = null;
                     List<ProcessWaitState> additionalToRemove = null;
                     foreach (KeyValuePair<int, ProcessWaitState> kv in s_childProcessWaitStates)

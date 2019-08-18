@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Pkcs
                     break;
                 case Oids.Pkcs7Data:
                     ConfidentialityMode = Pkcs12ConfidentialityMode.None;
-                    _bags = ReadBags(PkcsHelpers.DecodeOctetString(contentInfoAsn.Content));
+                    _bags = ReadBags(PkcsHelpers.DecodeOctetStringAsMemory(contentInfoAsn.Content));
                     break;
                 default:
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.Pkcs
 
             // Read to ensure that there is precisely one legally encoded value.
             AsnReader reader = new AsnReader(secretValue, AsnEncodingRules.BER);
-            reader.GetEncodedValue();
+            reader.ReadEncodedValue();
             reader.ThrowIfNotEmpty();
 
             Pkcs12SecretBag bag = new Pkcs12SecretBag(secretType, secretValue);
@@ -237,7 +237,7 @@ namespace System.Security.Cryptography.Pkcs
 
             List<Pkcs12SafeBag> bags;
             int encryptedValueLength = encryptedData.EncryptedContentInfo.EncryptedContent.Value.Length;
-            
+
             // Don't use the array pool because the parsed bags are going to have ReadOnlyMemory projections
             // over this data.
             byte[] destination = new byte[encryptedValueLength];
@@ -366,7 +366,7 @@ namespace System.Security.Cryptography.Pkcs
                     out bool isPkcs12);
 
                 int cipherBlockBytes = cipher.BlockSize / 8;
-                byte[] encryptedRent = ArrayPool<byte>.Shared.Rent(contentsSpan.Length + cipherBlockBytes);
+                byte[] encryptedRent = CryptoPool.Rent(contentsSpan.Length + cipherBlockBytes);
                 Span<byte> encryptedSpan = Span<byte>.Empty;
                 Span<byte> iv = stackalloc byte[cipherBlockBytes];
                 Span<byte> salt = stackalloc byte[16];
@@ -424,7 +424,7 @@ namespace System.Security.Cryptography.Pkcs
                 finally
                 {
                     CryptographicOperations.ZeroMemory(encryptedSpan);
-                    ArrayPool<byte>.Shared.Return(encryptedRent);
+                    CryptoPool.Return(encryptedRent, clearSize: 0);
                     writer?.Dispose();
                 }
             }
@@ -438,7 +438,7 @@ namespace System.Security.Cryptography.Pkcs
                 ConfidentialityMode == Pkcs12ConfidentialityMode.PublicKey)
             {
                 writer = new AsnWriter(AsnEncodingRules.BER);
-                writer.WriteEncodedValue(_encrypted);
+                writer.WriteEncodedValue(_encrypted.Span);
                 return writer;
             }
 

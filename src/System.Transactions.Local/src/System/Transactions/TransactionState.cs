@@ -11,14 +11,14 @@ using System.Transactions.Distributed;
 namespace System.Transactions
 {
     // The TransactionState object defines the basic set of operations that
-    // are available for a transaction.  It is a base type and the base 
+    // are available for a transaction.  It is a base type and the base
     // implementations all throw exceptions.  For a particular state a derived
     // implementation will inheret from this object and implement the appropriate
     // operations for that state.
     internal abstract class TransactionState
     {
         // The state machines themselves are designed to be internally consistent.  So the only externally visable
-        // state transition is to active.  All other state transitions must happen within the state machines 
+        // state transition is to active.  All other state transitions must happen within the state machines
         // themselves.
         private static TransactionStateActive s_transactionStateActive;
         private static TransactionStateSubordinateActive s_transactionStateSubordinateActive;
@@ -183,7 +183,7 @@ namespace System.Transactions
 
         internal virtual void EndCommit(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
 
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
@@ -297,7 +297,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateTransactionAborted(InternalTransaction tx, Exception e)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -309,7 +309,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateTransactionCommitted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -321,7 +321,7 @@ namespace System.Transactions
 
         internal virtual void InDoubtFromEnlistment(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -333,7 +333,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedAborted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -345,7 +345,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedCommitted(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -357,7 +357,7 @@ namespace System.Transactions
 
         internal virtual void InDoubtFromDtc(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -369,7 +369,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedPhase0(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -381,7 +381,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStatePromotedPhase1(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -393,7 +393,7 @@ namespace System.Transactions
 
         internal virtual void ChangeStateAbortedDuringPromotion(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -409,19 +409,19 @@ namespace System.Transactions
 
         internal virtual void Phase0VolatilePrepareDone(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void Phase1VolatilePrepareDone(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             throw TransactionException.CreateTransactionStateException(tx._innerException, tx.DistributedTxId);
         }
 
         internal virtual void RestartCommitIfNeeded(InternalTransaction tx)
         {
-            Debug.Assert(false, string.Format(null, "Invalid Event for State; Current State: {0}", GetType()));
+            Debug.Fail($"Invalid Event for State; Current State: {GetType()}");
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -492,7 +492,9 @@ namespace System.Transactions
                 {
                     Array.Copy(
                         enlistments._volatileEnlistments,
+                        0,
                         newEnlistments,
+                        0,
                         enlistments._volatileEnlistmentSize
                         );
                 }
@@ -628,7 +630,7 @@ namespace System.Transactions
         internal override void CompleteAbortingClone(InternalTransaction tx)
         {
             // A blocking clone simulates a phase 1 volatile
-            // 
+            //
             // Unlike a blocking clone however the aborting clones need to be accounted
             // for specifically.  So when one is complete remove it from the list.
             tx._phase1Volatiles._dependentClones--;
@@ -667,7 +669,7 @@ namespace System.Transactions
 
 
 
-    // TransactionStateActive 
+    // TransactionStateActive
     //
     // Transaction state before commit has been called
     internal class TransactionStateActive : EnlistableStates
@@ -921,7 +923,7 @@ namespace System.Transactions
             // Set the transaction state
             CommonEnterState(tx);
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase0Volatiles._volatileEnlistmentCount;
             int dependentCount = tx._phase0Volatiles._dependentClones;
@@ -1101,7 +1103,7 @@ namespace System.Transactions
             // Check to see if any Phase0Volatiles have been added in Phase0.
             // If so go through the list again.
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase0Volatiles._volatileEnlistmentCount;
             int dependentCount = tx._phase0Volatiles._dependentClones;
@@ -1177,7 +1179,7 @@ namespace System.Transactions
         }
     }
 
-    // TransactionStateVolatilePhase1 
+    // TransactionStateVolatilePhase1
     //
     // Represents the transaction state during phase 1 preparing volatile enlistments
     internal class TransactionStateVolatilePhase1 : ActiveStates
@@ -1262,7 +1264,7 @@ namespace System.Transactions
     }
 
 
-    // TransactionStateVolatileSPC 
+    // TransactionStateVolatileSPC
     //
     // Represents the transaction state during phase 1 when issuing SPC to a volatile enlistment
     internal class TransactionStateVolatileSPC : ActiveStates
@@ -1303,7 +1305,7 @@ namespace System.Transactions
         }
     }
 
-    // TransactionStateSPC 
+    // TransactionStateSPC
     //
     // Represents the transaction state during phase 1
     internal class TransactionStateSPC : ActiveStates
@@ -2310,7 +2312,7 @@ namespace System.Transactions
         {
             // Failures from this point on will simply abort the two types of transaction
             // separately.  Note that this may cause duplicate internal aborted events to
-            // be sent to some of the enlistments however the enlistment state machines 
+            // be sent to some of the enlistments however the enlistment state machines
             // can handle the duplicate notification.
 
             bool enlistmentsPromoted = false;
@@ -2443,8 +2445,8 @@ namespace System.Transactions
             }
             catch (TransactionException e)
             {
-                // In this state we don't want a transaction exception from BeginCommit to randomly 
-                // bubble up to the application or go unhandled.  So catch the exception and if the 
+                // In this state we don't want a transaction exception from BeginCommit to randomly
+                // bubble up to the application or go unhandled.  So catch the exception and if the
                 // inner exception for the transaction has not already been set then set it.
                 if (tx._innerException == null)
                 {
@@ -2516,7 +2518,7 @@ namespace System.Transactions
     // TransactionStatePromotedPhase0
     //
     // This state indicates that the transaction has been promoted and started the process
-    // of committing.  The transaction had volatile phase0 enlistments and is acting as a 
+    // of committing.  The transaction had volatile phase0 enlistments and is acting as a
     // proxy to the TM for those phase0 enlistments.
     internal class TransactionStatePromotedPhase0 : TransactionStatePromotedCommitting
     {
@@ -2524,7 +2526,7 @@ namespace System.Transactions
         {
             CommonEnterState(tx);
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase0Volatiles._volatileEnlistmentCount;
             int dependentCount = tx._phase0Volatiles._dependentClones;
@@ -2597,7 +2599,7 @@ namespace System.Transactions
     // TransactionStatePromotedPhase1
     //
     // This state indicates that the transaction has been promoted and started the process
-    // of committing.  The transaction had volatile phase1 enlistments and is acting as a 
+    // of committing.  The transaction had volatile phase1 enlistments and is acting as a
     // proxy to the TM for those phase1 enlistments.
     internal class TransactionStatePromotedPhase1 : TransactionStatePromotedCommitting
     {
@@ -2618,7 +2620,7 @@ namespace System.Transactions
                 return;
             }
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase1Volatiles._volatileEnlistmentCount;
 
@@ -3254,7 +3256,7 @@ namespace System.Transactions
 
         internal override void ChangeStatePromotedAborted(InternalTransaction tx)
         {
-            // Transaction outcome can come from different directions.  In the case of InDoubt 
+            // Transaction outcome can come from different directions.  In the case of InDoubt
             // transactions it is possible that one source knowns the actual outcome for
             // the transaction.  However since the transaction does not know if it will receive
             // a different answer for the outcome it accepts the first answer it gets.
@@ -3332,7 +3334,7 @@ namespace System.Transactions
             // Transaction.PSPEPromoteAndConvertToEnlistDurable to promote the transaction
             // within the same AppDomain. So we don't need to add the distributedTx to the
             // PromotedTransactionTable and we don't need to call
-            // FireDistributedTransactionStarted and we don't need to promote the 
+            // FireDistributedTransactionStarted and we don't need to promote the
             // enlistments. That was all done when the transaction was changed to
             // TransactionStatePromoted.
             if (tx.PromotedTransaction != distributedTx)
@@ -3578,7 +3580,7 @@ namespace System.Transactions
         internal override void CompleteAbortingClone(InternalTransaction tx)
         {
             // A blocking clone simulates a phase 1 volatile
-            // 
+            //
             // Unlike a blocking clone however the aborting clones need to be accounted
             // for specifically.  So when one is complete remove it from the list.
             tx._phase1Volatiles._dependentClones--;
@@ -3684,7 +3686,7 @@ namespace System.Transactions
             // Set the transaction state
             CommonEnterState(tx);
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase0Volatiles._volatileEnlistmentCount;
             int dependentCount = tx._phase0Volatiles._dependentClones;
@@ -3728,7 +3730,7 @@ namespace System.Transactions
             // Check to see if any Phase0Volatiles have been added in Phase0.
             // If so go through the list again.
 
-            // Get a copy of the current volatile enlistment count before entering this loop so that other 
+            // Get a copy of the current volatile enlistment count before entering this loop so that other
             // threads don't affect the operation of this loop.
             int volatileCount = tx._phase0Volatiles._volatileEnlistmentCount;
             int dependentCount = tx._phase0Volatiles._dependentClones;
@@ -3767,7 +3769,7 @@ namespace System.Transactions
         }
     }
 
-    // TransactionStatePromotedNonMSDTCVolatilePhase1 
+    // TransactionStatePromotedNonMSDTCVolatilePhase1
     //
     // Represents the transaction state during phase 1 preparing volatile enlistments
     internal class TransactionStatePromotedNonMSDTCVolatilePhase1 : TransactionStatePromotedNonMSDTCBase
@@ -4300,8 +4302,8 @@ namespace System.Transactions
 
 
                 distributedTx = TransactionStatePSPEOperation.PSPEPromote(tx);
-                Debug.Assert((distributedTx == null), string.Format(null, "PSPEPromote for non-MSDTC promotion returned a distributed transaction."));
-                Debug.Assert((tx.promotedToken != null), string.Format(null, "PSPEPromote for non-MSDTC promotion did not set InternalTransaction.PromotedToken."));
+                Debug.Assert((distributedTx == null), "PSPEPromote for non-MSDTC promotion returned a distributed transaction.");
+                Debug.Assert((tx.promotedToken != null), "PSPEPromote for non-MSDTC promotion did not set InternalTransaction.PromotedToken.");
             }
             catch (TransactionPromotionException e)
             {
@@ -4408,7 +4410,7 @@ namespace System.Transactions
 
         // This method will call the initialize method on IPromotableSinglePhaseNotification.
         // The tx state will be set to TransactionStatePhase0 to receive and process further
-        // enlistments during Phase0. 
+        // enlistments during Phase0.
 
         internal void Phase0PSPEInitialize(
             InternalTransaction tx,

@@ -2,9 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text;
 
 namespace System
@@ -13,7 +10,7 @@ namespace System
     {
         private readonly byte[] _publicKeyToken;
 
-        public ApplicationId(byte[] publicKeyToken, string name, Version version, string processorArchitecture, string culture)
+        public ApplicationId(byte[] publicKeyToken, string name, Version version, string? processorArchitecture, string? culture)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (name.Length == 0) throw new ArgumentException(SR.Argument_EmptyApplicationName);
@@ -27,11 +24,11 @@ namespace System
             Culture = culture;
         }
 
-        public string Culture { get; }
+        public string? Culture { get; }
 
         public string Name { get; }
 
-        public string ProcessorArchitecture { get; }
+        public string? ProcessorArchitecture { get; }
 
         public Version Version { get; }
 
@@ -39,7 +36,7 @@ namespace System
 
         public ApplicationId Copy() => new ApplicationId(_publicKeyToken, Name, Version, ProcessorArchitecture, Culture);
 
-        public override string ToString ()
+        public override string ToString()
         {
             Span<char> charSpan = stackalloc char[128];
             var sb = new ValueStringBuilder(charSpan);
@@ -79,34 +76,34 @@ namespace System
                 stringBuilder.Append(HexDigit(digit));
             }
 
-            char HexDigit(int num) =>
+            static char HexDigit(int num) =>
                 (char)((num < 10) ? (num + '0') : (num + ('A' - 10)));
         }
 
-        public override bool Equals (object o)
+        public override bool Equals(object? o)
         {
-            ApplicationId other = (o as ApplicationId);
+            ApplicationId? other = o as ApplicationId;
             if (other == null)
                 return false;
- 
+
             if (!(Equals(Name, other.Name) &&
                   Equals(Version, other.Version) &&
                   Equals(ProcessorArchitecture, other.ProcessorArchitecture) &&
                   Equals(Culture, other.Culture)))
                 return false;
- 
+
             if (_publicKeyToken.Length != other._publicKeyToken.Length)
                 return false;
- 
+
             for (int i = 0; i < _publicKeyToken.Length; i++)
             {
                 if (_publicKeyToken[i] != other._publicKeyToken[i])
                     return false;
             }
- 
+
             return true;
         }
- 
+
         public override int GetHashCode()
         {
             // Note: purposely skipping publicKeyToken, processor architecture and culture as they

@@ -13,20 +13,20 @@ namespace System.ComponentModel.Design
     public class ServiceContainer : IServiceContainer, IDisposable
     {
         private ServiceCollection<object> _services;
-        private IServiceProvider _parentProvider;
+        private readonly IServiceProvider _parentProvider;
         private static readonly Type[] s_defaultServices = new Type[] { typeof(IServiceContainer), typeof(ServiceContainer) };
 
-        private static TraceSwitch s_TRACESERVICE = new TraceSwitch("TRACESERVICE", "ServiceProvider: Trace service provider requests.");
+        private static readonly TraceSwitch s_traceSwitch = new TraceSwitch("TRACESERVICE", "ServiceProvider: Trace service provider requests.");
 
         /// <summary>
-        /// Creates a new service object container. 
+        /// Creates a new service object container.
         /// </summary>
         public ServiceContainer()
         {
         }
 
         /// <summary>
-        /// Creates a new service object container. 
+        /// Creates a new service object container.
         /// </summary>
         public ServiceContainer(IServiceProvider parentProvider)
         {
@@ -34,20 +34,11 @@ namespace System.ComponentModel.Design
         }
 
         /// <summary>
-        /// Retrieves the parent service container, or null
-        /// if there is no parent container.
+        /// Retrieves the parent service container, or null if there is no parent container.
         /// </summary>
         private IServiceContainer Container
         {
-            get
-            {
-                IServiceContainer container = null;
-                if (_parentProvider != null)
-                {
-                    container = (IServiceContainer)_parentProvider.GetService(typeof(IServiceContainer));
-                }
-                return container;
-            }
+            get => _parentProvider?.GetService(typeof(IServiceContainer)) as IServiceContainer;
         }
 
         /// <summary>
@@ -77,13 +68,13 @@ namespace System.ComponentModel.Design
         /// </summary>
         public virtual void AddService(Type serviceType, object serviceInstance, bool promote)
         {
-            Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Adding service (instance) {serviceType.Name}. Promoting: {promote.ToString()}");
+            Debug.WriteLineIf(s_traceSwitch.TraceVerbose, $"Adding service (instance) {serviceType?.Name}. Promoting: {promote}");
             if (promote)
             {
                 IServiceContainer container = Container;
                 if (container != null)
                 {
-                    Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Promoting to container");
+                    Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "Promoting to container");
                     container.AddService(serviceType, serviceInstance, promote);
                     return;
                 }
@@ -120,13 +111,13 @@ namespace System.ComponentModel.Design
         /// </summary>
         public virtual void AddService(Type serviceType, ServiceCreatorCallback callback, bool promote)
         {
-            Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Adding service (callback) {serviceType.Name}. Promoting: {promote.ToString()}");
+            Debug.WriteLineIf(s_traceSwitch.TraceVerbose, $"Adding service (callback) {serviceType?.Name}. Promoting: {promote}");
             if (promote)
             {
                 IServiceContainer container = Container;
                 if (container != null)
                 {
-                    Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Promoting to container");
+                    Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "Promoting to container");
                     container.AddService(serviceType, callback, promote);
                     return;
                 }
@@ -185,21 +176,21 @@ namespace System.ComponentModel.Design
         {
             object service = null;
 
-            Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Searching for service {serviceType.Name}");
+            Debug.WriteLineIf(s_traceSwitch.TraceVerbose, $"Searching for service {serviceType?.Name}");
 
             // Try locally. We first test for services we
             // implement and then look in our service collection.
             Type[] defaults = DefaultServices;
             for (int idx = 0; idx < defaults.Length; idx++)
             {
-                if (serviceType.IsEquivalentTo(defaults[idx]))
+                if (serviceType != null && serviceType.IsEquivalentTo(defaults[idx]))
                 {
                     service = this;
                     break;
                 }
             }
 
-            if (service == null)
+            if (service == null && serviceType != null)
             {
                 Services.TryGetValue(serviceType, out service);
             }
@@ -207,15 +198,14 @@ namespace System.ComponentModel.Design
             // Is the service a creator delegate?
             if (service is ServiceCreatorCallback)
             {
-                Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Encountered a callback. Invoking it");
+                Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "Encountered a callback. Invoking it");
                 service = ((ServiceCreatorCallback)service)(this, serviceType);
-                Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Callback return object: {(service == null ? "(null)" : service.ToString())}");
+                Debug.WriteLineIf(s_traceSwitch.TraceVerbose, $"Callback return object: {(service == null ? "(null)" : service.ToString())}");
                 if (service != null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service. NULL it, rather than throwing an exception.
                     // Callers here do not need to be prepared to handle bad callback implemetations.
-                    Debug.Fail($"Object {service.GetType().Name} was returned from a service creator callback but it does not implement the registered type of {serviceType.Name}");
-                    Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "**** Object does not implement service interface");
+                    Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "**** Object does not implement service interface");
                     service = null;
                 }
 
@@ -225,12 +215,12 @@ namespace System.ComponentModel.Design
 
             if (service == null && _parentProvider != null)
             {
-                Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Service unresolved. Trying parent");
+                Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "Service unresolved. Trying parent");
                 service = _parentProvider.GetService(serviceType);
             }
 
 #if DEBUG
-            if (s_TRACESERVICE.TraceVerbose && service == null)
+            if (s_traceSwitch.TraceVerbose && service == null)
             {
                 Debug.WriteLine("******************************************");
                 Debug.WriteLine("FAILED to resolve service " + serviceType.Name);
@@ -255,13 +245,13 @@ namespace System.ComponentModel.Design
         /// </summary>
         public virtual void RemoveService(Type serviceType, bool promote)
         {
-            Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, $"Removing service: {serviceType.Name}, Promote: {promote.ToString()}");
+            Debug.WriteLineIf(s_traceSwitch.TraceVerbose, $"Removing service: {serviceType?.Name}, Promote: {promote}");
             if (promote)
             {
                 IServiceContainer container = Container;
                 if (container != null)
                 {
-                    Debug.WriteLineIf(s_TRACESERVICE.TraceVerbose, "Invoking parent container");
+                    Debug.WriteLineIf(s_traceSwitch.TraceVerbose, "Invoking parent container");
                     container.RemoveService(serviceType, promote);
                     return;
                 }
@@ -285,7 +275,7 @@ namespace System.ComponentModel.Design
         /// <typeparam name="T"></typeparam>
         private sealed class ServiceCollection<T> : Dictionary<Type, T>
         {
-            private static EmbeddedTypeAwareTypeComparer s_serviceTypeComparer = new EmbeddedTypeAwareTypeComparer();
+            private static readonly EmbeddedTypeAwareTypeComparer s_serviceTypeComparer = new EmbeddedTypeAwareTypeComparer();
 
             private sealed class EmbeddedTypeAwareTypeComparer : IEqualityComparer<Type>
             {
@@ -300,4 +290,3 @@ namespace System.ComponentModel.Design
         }
     }
 }
-

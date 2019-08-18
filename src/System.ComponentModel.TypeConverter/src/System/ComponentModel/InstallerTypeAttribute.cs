@@ -14,13 +14,18 @@ namespace System.ComponentModel
     [AttributeUsage(AttributeTargets.Class)]
     public class InstallerTypeAttribute : Attribute
     {
-        private string _typeName;
+        private readonly string _typeName;
 
         /// <summary>
         /// Initializes a new instance of the System.Windows.Forms.ComponentModel.InstallerTypeAttribute class.
         /// </summary>
         public InstallerTypeAttribute(Type installerType)
         {
+            if (installerType == null)
+            {
+                throw new ArgumentNullException(nameof(installerType));
+            }
+
             _typeName = installerType.AssemblyQualifiedName;
         }
 

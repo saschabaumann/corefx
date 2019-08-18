@@ -15,8 +15,8 @@ namespace System.Collections.Generic
         /// </summary>
         internal sealed class TreeSubSet : SortedSet<T>, ISerializable, IDeserializationCallback
         {
-            private SortedSet<T> _underlying;
-            private T _min, _max;
+            private readonly SortedSet<T> _underlying;
+            private readonly T _min, _max;
             // keeps track of whether the count variable is up to date
             // up to date -> _countVersion = _underlying.version
             // not up to date -> _countVersion < _underlying.version
@@ -25,7 +25,7 @@ namespace System.Collections.Generic
             // for instance, you could allow this subset to be defined for i > 10. The set will throw if
             // anything <= 10 is added, but there is no upper bound. These features Head(), Tail(), were punted
             // in the spec, and are not available, but the framework is there to make them available at some point.
-            private bool _lBoundActive, _uBoundActive;
+            private readonly bool _lBoundActive, _uBoundActive;
             // used to see if the count is out of date
 
 #if DEBUG
@@ -125,8 +125,8 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    Node current = root;
-                    T result = default(T);
+                    Node? current = root;
+                    T result = default(T)!;
 
                     while (current != null)
                     {
@@ -155,8 +155,8 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    Node current = root;
-                    T result = default(T);
+                    Node? current = root;
+                    T result = default(T)!;
 
                     while (current != null)
                     {
@@ -192,7 +192,7 @@ namespace System.Collections.Generic
                 // The maximum height of a red-black tree is 2*lg(n+1).
                 // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
                 Stack<Node> stack = new Stack<Node>(2 * (int)SortedSet<T>.Log2(count + 1)); // this is not exactly right if count is out of date, but the stack can grow
-                Node current = root;
+                Node? current = root;
                 while (current != null)
                 {
                     if (IsWithinRange(current.Item))
@@ -218,7 +218,7 @@ namespace System.Collections.Generic
                         return false;
                     }
 
-                    Node node = current.Right;
+                    Node? node = current.Right;
                     while (node != null)
                     {
                         if (IsWithinRange(node.Item))
@@ -271,7 +271,7 @@ namespace System.Collections.Generic
                 return true;
             }
 
-            internal override SortedSet<T>.Node FindNode(T item)
+            internal override SortedSet<T>.Node? FindNode(T item)
             {
                 if (!IsWithinRange(item))
                 {
@@ -365,12 +365,12 @@ namespace System.Collections.Generic
                 throw new PlatformNotSupportedException();
             }
 
-            void IDeserializationCallback.OnDeserialization(object sender)
+            void IDeserializationCallback.OnDeserialization(object? sender)
             {
                 throw new PlatformNotSupportedException();
             }
 
-            protected override void OnDeserialization(object sender) => throw new PlatformNotSupportedException();
+            protected override void OnDeserialization(object? sender) => throw new PlatformNotSupportedException();
         }
     }
 }

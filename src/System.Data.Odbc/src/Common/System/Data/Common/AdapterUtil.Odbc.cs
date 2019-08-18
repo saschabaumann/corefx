@@ -94,7 +94,7 @@ namespace System.Data.Common
                 case CommandType.Text:
                 case CommandType.StoredProcedure:
                 case CommandType.TableDirect:
-                    Debug.Assert(false, "valid CommandType " + value.ToString());
+                    Debug.Fail("valid CommandType " + value.ToString());
                     break;
             }
 #endif
@@ -102,7 +102,7 @@ namespace System.Data.Common
         }
 
         // IDataParameter.SourceVersion
-        static internal ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
+        internal static ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
         {
 #if DEBUG
             switch (value)
@@ -111,7 +111,7 @@ namespace System.Data.Common
                 case DataRowVersion.Current:
                 case DataRowVersion.Original:
                 case DataRowVersion.Proposed:
-                    Debug.Assert(false, "valid DataRowVersion " + value.ToString());
+                    Debug.Fail("valid DataRowVersion " + value.ToString());
                     break;
             }
 #endif
@@ -131,7 +131,7 @@ namespace System.Data.Common
                 case IsolationLevel.RepeatableRead:
                 case IsolationLevel.Serializable:
                 case IsolationLevel.Snapshot:
-                    Debug.Assert(false, "valid IsolationLevel " + value.ToString());
+                    Debug.Fail("valid IsolationLevel " + value.ToString());
                     break;
             }
 #endif
@@ -146,7 +146,7 @@ namespace System.Data.Common
             {
                 case KeyRestrictionBehavior.PreventUsage:
                 case KeyRestrictionBehavior.AllowOnly:
-                    Debug.Assert(false, "valid KeyRestrictionBehavior " + value.ToString());
+                    Debug.Fail("valid KeyRestrictionBehavior " + value.ToString());
                     break;
             }
 #endif
@@ -163,7 +163,7 @@ namespace System.Data.Common
                 case ParameterDirection.Output:
                 case ParameterDirection.InputOutput:
                 case ParameterDirection.ReturnValue:
-                    Debug.Assert(false, "valid ParameterDirection " + value.ToString());
+                    Debug.Fail("valid ParameterDirection " + value.ToString());
                     break;
             }
 #endif
@@ -180,7 +180,7 @@ namespace System.Data.Common
                 case UpdateRowSource.OutputParameters:
                 case UpdateRowSource.FirstReturnedRecord:
                 case UpdateRowSource.Both:
-                    Debug.Assert(false, "valid UpdateRowSource " + value.ToString());
+                    Debug.Fail("valid UpdateRowSource " + value.ToString());
                     break;
             }
 #endif
@@ -569,9 +569,6 @@ namespace System.Data.Common
         internal const int DecimalMaxPrecision = 29;
         internal const int DecimalMaxPrecision28 = 28;  // there are some cases in Odbc where we need that ...
         internal const int DefaultCommandTimeout = 30;
-
-        // security issue, don't rely upon static public readonly values - AS/URT 109635
-        internal static readonly string StrEmpty = ""; // String.Empty
 
         internal static readonly IntPtr PtrZero = new IntPtr(0); // IntPtr.Zero
         internal static readonly int PtrSize = IntPtr.Size;

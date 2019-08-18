@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace System.Net.Sockets
@@ -128,7 +129,7 @@ namespace System.Net.Sockets
             _receivedFlags = receivedFlags;
         }
 
-        internal unsafe SocketError DoOperationReceive(SafeSocketHandle handle)
+        internal unsafe SocketError DoOperationReceive(SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -138,7 +139,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, out flags, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.ReceiveAsync(_buffer.Slice(_offset, _count), _socketFlags, out bytesReceived, out flags, TransferCompletionCallback, cancellationToken);
             }
             else
             {
@@ -220,7 +221,7 @@ namespace System.Net.Sockets
             return socketError;
         }
 
-        internal unsafe SocketError DoOperationSend(SafeSocketHandle handle)
+        internal unsafe SocketError DoOperationSend(SafeSocketHandle handle, CancellationToken cancellationToken)
         {
             _receivedFlags = System.Net.Sockets.SocketFlags.None;
             _socketAddressSize = 0;
@@ -229,7 +230,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             if (_bufferList == null)
             {
-                errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, out bytesSent, TransferCompletionCallback);
+                errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, out bytesSent, TransferCompletionCallback, cancellationToken);
             }
             else
             {
@@ -360,6 +361,10 @@ namespace System.Net.Sockets
                     else if (spe.FilePath != null)
                     {
                         NetEventSource.NotLoggedFile(spe.FilePath, _currentSocket, _completedOperation);
+                    }
+                    else if (spe.FileStream != null)
+                    {
+                        NetEventSource.NotLoggedFile(spe.FileStream.Name, _currentSocket, _completedOperation);
                     }
                 }
             }

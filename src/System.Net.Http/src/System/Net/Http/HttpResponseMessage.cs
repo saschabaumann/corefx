@@ -13,6 +13,7 @@ namespace System.Net.Http
 
         private HttpStatusCode _statusCode;
         private HttpResponseHeaders _headers;
+        private HttpResponseHeaders _trailingHeaders;
         private string _reasonPhrase;
         private HttpRequestMessage _requestMessage;
         private Version _version;
@@ -115,6 +116,19 @@ namespace System.Net.Http
             }
         }
 
+        public HttpResponseHeaders TrailingHeaders
+        {
+            get
+            {
+                if (_trailingHeaders == null)
+                {
+                    _trailingHeaders = new HttpResponseHeaders();
+                }
+
+                return _trailingHeaders;
+            }
+        }
+
         public HttpRequestMessage RequestMessage
         {
             get { return _requestMessage; }
@@ -155,7 +169,7 @@ namespace System.Net.Http
         {
             if (!IsSuccessStatusCode)
             {
-                throw new HttpRequestException(string.Format(
+                throw new HttpRequestException(SR.Format(
                     System.Globalization.CultureInfo.InvariantCulture,
                     SR.net_http_message_not_success_statuscode,
                     (int)_statusCode,
@@ -184,6 +198,12 @@ namespace System.Net.Http
             sb.Append(", Headers:\r\n");
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
+            if (_trailingHeaders != null)
+            {
+                sb.Append(", Trailing Headers:\r\n");
+                HeaderUtilities.DumpHeaders(sb, _trailingHeaders);
+            }
+
             return sb.ToString();
         }
 
@@ -204,7 +224,7 @@ namespace System.Net.Http
         protected virtual void Dispose(bool disposing)
         {
             // The reason for this type to implement IDisposable is that it contains instances of types that implement
-            // IDisposable (content). 
+            // IDisposable (content).
             if (disposing && !_disposed)
             {
                 _disposed = true;

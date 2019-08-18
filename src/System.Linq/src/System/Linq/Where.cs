@@ -14,12 +14,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull(nameof(predicate));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
             if (source is Iterator<TSource> iterator)
@@ -46,12 +46,12 @@ namespace System.Linq
         {
             if (source == null)
             {
-                throw Error.ArgumentNull(nameof(source));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
             if (predicate == null)
             {
-                throw Error.ArgumentNull(nameof(predicate));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.predicate);
             }
 
             return WhereIterator(source, predicate);
@@ -139,7 +139,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that filters each item of a <see cref="T:TSource[]"/>.
+        /// An iterator that filters each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         internal sealed partial class WhereArrayIterator<TSource> : Iterator<TSource>
@@ -240,7 +240,7 @@ namespace System.Linq
         }
 
         /// <summary>
-        /// An iterator that filters, then maps, each item of a <see cref="T:TSource[]"/>.
+        /// An iterator that filters, then maps, each item of an array.
         /// </summary>
         /// <typeparam name="TSource">The type of the source array.</typeparam>
         /// <typeparam name="TResult">The type of the mapped items.</typeparam>

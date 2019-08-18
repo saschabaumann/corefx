@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="CheckForBuildTools" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
 
   <PropertyGroup>
     <!--
@@ -9,33 +8,26 @@
     <ImportDirectoryBuildTargets>false</ImportDirectoryBuildTargets>
   </PropertyGroup>
 
-  <!-- temporarily remap AssemblyKey to StrongNameKeyId -->
   <PropertyGroup>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'MSFT'">Microsoft</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'ECMA'">ECMA</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'Open' or '$(IsTestProject)' == 'true'">Open</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightPlatform'">SilverlightPlatform</StrongNameKeyId>
-    <StrongNameKeyId Condition="'$(AssemblyKey)' == 'SilverlightExtension'">MicrosoftShared</StrongNameKeyId>
+    <!-- Override strong name key to default to Open for test projects,
+         Tests which wish to control this should set TestStrongNameKeyId. -->
+    <TestStrongNameKeyId Condition="'$(TestStrongNameKeyId)' == ''">Open</TestStrongNameKeyId>
+    <StrongNameKeyId Condition="'$(IsTestProject)' == 'true'">$(TestStrongNameKeyId)</StrongNameKeyId>
   </PropertyGroup>
 
+  <Import Project="$(RepositoryEngineeringDir)Resources.targets" />
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
   <PropertyGroup>
-    <!-- PackageOutputPath gets unconditionally in arcade sdk targets we need to reset it here until we reconcile the paths -->
-    <PackageOutputPath>$(PackageOutputRoot)$(ConfigurationGroup)/</PackageOutputPath>
+    <ArtifactsPackagesDir>$([MSBuild]::NormalizePath('$(ArtifactsDir)', 'packages', '$(ConfigurationGroup)'))</ArtifactsPackagesDir>
+    <ArtifactsShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'Shipping'))</ArtifactsShippingPackagesDir>
+    <ArtifactsNonShippingPackagesDir>$([MSBuild]::NormalizeDirectory('$(ArtifactsPackagesDir)', 'NonShipping'))</ArtifactsNonShippingPackagesDir>
+
+    <PackageOutputPath Condition="'$(IsShippingPackage)' == 'true'">$(ArtifactsShippingPackagesDir)</PackageOutputPath>
+    <PackageOutputPath Condition="'$(IsShippingPackage)' != 'true'">$(ArtifactsNonShippingPackagesDir)</PackageOutputPath>
   </PropertyGroup>
 
-  <Import Project="eng\versioning.targets" />
-
-  <Target Name="CheckForBuildTools">
-    <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'=='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run sync in your repo to ensure the tools are installed before attempting to build an individual project." />
-    <Error Condition="!Exists('$(ToolsDir)') and '$(OverrideToolsDir)'!='true'"
-           Text="The tools directory [$(ToolsDir)] does not exist. Please run init-tools.cmd in your repo to ensure the tools are installed before attempting to build an individual project." />
-  </Target>
-
-  <Import Project="buildvertical.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)eng\CodeAnalysis.targets" />
+  <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
@@ -49,7 +41,6 @@
 
     <BinPlaceRef Condition="'$(BinPlaceRef)' == '' And ('$(IsReferenceAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRef>
     <BinPlaceRuntime Condition="'$(BinPlaceRuntime)' == '' And ('$(IsRuntimeAssembly)' == 'true' OR '$(IsRuntimeAndReferenceAssembly)' == 'true')">true</BinPlaceRuntime>
-    <BinPlaceTest Condition="'$(BinPlaceTest)' == '' And '$(IsTestProject)' == 'true'">true</BinPlaceTest>
   </PropertyGroup>
 
   <ItemGroup Condition="'@(BinPlaceConfiguration)' == ''">
@@ -57,8 +48,6 @@
     <BinPlaceConfiguration Include="$(_bc_TargetGroup)-$(_bc_OSGroup)">
       <RefPath>$(BuildConfigurationRefPath)</RefPath>
       <RuntimePath>$(RuntimePath)</RuntimePath>
-      <!-- we want to bin place the test output into the working directory -->
-      <TestPath>$(TestPath)</TestPath>
     </BinPlaceConfiguration>
     <!-- binplace to directories for packages -->
     <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
@@ -69,101 +58,64 @@
       <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
       <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsNETCoreApp)' == 'true' AND '$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreappaot-$(_bc_OSGroup)">
-      <PackageFileRuntimePath>$(NETCoreAppAotPackageRuntimePath)</PackageFileRuntimePath>
-      <!-- enable trimming for any runtime project that's part of the shared framework and hasn't already set ILLinkTrimAssembly -->
-      <SetProperties Condition="'$(BinPlaceRuntime)' == 'true' AND '$(ILLinkTrimAssembly)' == ''">ILLinkTrimAssembly=true</SetProperties>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAPRef)'=='true' AND ('$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true')" Include="uap-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsUAPRef)'=='true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-Windows_NT">
       <PackageFileRefPath>$(UAPPackageRefPath)</PackageFileRefPath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPVertical)' == 'true'" Include="uap-Windows_NT">
       <PackageFileRuntimePath>$(UAPPackageRuntimePath)</PackageFileRuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
-      <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
 
     <!-- Setup the shared framework directory for testing -->
     <BinPlaceConfiguration Condition="'$(BinPlaceTestSharedFramework)' == 'true'" Include="netcoreapp-$(_bc_OSGroup)">
       <RuntimePath>$(NETCoreAppTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
-    <!-- Setup the ILCInputFolder directory for testing aot -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
-      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
-    </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceILCInputFolder)' == 'true'" Include="netcoreappaot-$(_bc_OSGroup)">
-      <RuntimePath>$(ILCFXInputFolder)</RuntimePath>
-    </BinPlaceConfiguration>
     <!-- And the UAP folder for the F5 (CoreCLR UAP-debugging) scenario -->
-    <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceUAPFramework)' == 'true'" Include="uap-Windows_NT">
       <RuntimePath>$(UAPTestSharedFrameworkPath)</RuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="netfx-$(_bc_OSGroup)">
+    <BinPlaceConfiguration Condition="'$(BinPlaceNETFXRuntime)' == 'true'" Include="netfx-Windows_NT">
       <RuntimePath>$(TestHostRootPath)</RuntimePath>
-    </BinPlaceConfiguration>
-
-    <!-- binplace netstandard test suite -->
-    <BinPlaceConfiguration Condition="'$(BuildingNETStandardVertical)' == 'true' AND '$(IsTestProject)' == 'true'" Include="netstandard-$(_bc_OSGroup)">
-      <TestPath>$(NETStandardTestSuiteOutputPath)$(AssemblyName)/</TestPath>
     </BinPlaceConfiguration>
 
     <!-- binplace targeting packs which may be different from BuildConfiguration -->
     <BinPlaceConfiguration Include="netstandard">
-      <RefPath>$(RefRootPath)netstandard/</RefPath>
+      <RefPath>$(NetStandardRefPath)</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="netstandard2.1">
+      <RefPath>$(NetStandard21RefPath)</RefPath>
     </BinPlaceConfiguration>
     <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
     <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
       <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Include="netcoreapp2.0-Windows_NT">
-      <RuntimePath>$(ShimsTargetRuntimeRoot)netcoreapp2.0/</RuntimePath>
-    </BinPlaceConfiguration>
     <!-- some libraries that produce packages will remain targeting uap10.0.16299 -->
-    <BinPlaceConfiguration Condition="'$(BuildingUAPVertical)' == 'true' OR '$(BuildingUAPAOTVertical)' == 'true'" Include="uap10.0.16299">
+    <BinPlaceConfiguration Condition="'$(BuildingUAPVertical)' == 'true'" Include="uap10.0.16299">
       <RefPath>$(RefRootPath)uap10.0.16299/</RefPath>
     </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
-    <_TargetGroupsWithIsAot Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
-      <IsAot>$([System.String]::new('%(Identity)').Contains('aot'))</IsAot>
-    </_TargetGroupsWithIsAot>
-    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'"
-                           Include="@(_TargetGroupsWithIsAot->WithMetadataValue('IsAot', 'false'))">
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
       <RefPath>$(RefRootPath)%(Identity)/</RefPath>
     </BinPlaceConfiguration>
+    <!-- for BuildAllConfigurations make sure runtimepaths are created for all vertical targetgroups. -->
+    <BinPlaceConfiguration Condition="'$(BuildAllConfigurations)' == 'true'" Include="netcoreapp-$(_bc_OSGroup);uap-Windows_NT">
+      <RuntimePath>$(ArtifactsBinDir)runtime/%(Identity)-$(ConfigurationGroup)-$(ArchGroup)</RuntimePath>
+    </BinPlaceConfiguration>
+
+    <BinPlaceConfiguration Include="@(AdditionalBinPlaceConfiguration)" />
   </ItemGroup>
 
-  <Import Project="$(ToolsDir)/Build.Common.targets" Condition="Exists('$(ToolsDir)/Build.Common.targets')" />
-  <Import Project="$(MSBuildThisFileDirectory)eng/Resources.targets" />
+  <Import Project="$(RepositoryEngineeringDir)codeOptimization.targets" />
+  <Import Project="$(RepositoryEngineeringDir)depProj.targets" Condition="'$(MSBuildProjectExtension)' == '.depproj'" />
+  <Import Project="$(RepositoryEngineeringDir)references.targets" />
+  <Import Project="$(RepositoryEngineeringDir)resolveContract.targets" />
 
-  <Import Project="$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets" Condition="Exists('$(ToolSetCommonDirectory)Tools.proj.nuget.g.targets')" />
+  <Import Sdk="Microsoft.DotNet.Build.Tasks.Configuration" Project="Sdk.targets" />
+  <Import Sdk="Microsoft.DotNet.CoreFxTesting" Project="Sdk.targets" Condition="'$(DotNetBuildFromSource)' != 'true' and '$(BuildAllConfigurations)' != 'true'" />
+  <Import Condition="'$(EnableProjectRestore)' != 'true'" Project="$(RepositoryEngineeringDir)restore\repoRestore.targets" />
 
-  <!-- permit a wrapping build system to contribute targets to this build -->
-  <Import Condition="Exists('$(MSBuildThisFileDirectory)..\open.targets')" Project="$(MSBuildThisFileDirectory)..\open.targets" />
-
-  <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
-  <Import Project="$(MSBuildThisFileDirectory)illink.targets" />
-
-  <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
-    <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uapvNext -->
-    <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
-  </ItemGroup>
-
-  <!--
-    Import Test SDK props and targets.
-    This needs to happen here as the IsInvokableTestProject prop is required
-    which isn't available before Directory.Build.targets.
-    TODO: Fix VB test project reference to Test SDK.
-  -->
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\buildMultiTargeting\Microsoft.Net.Test.Sdk.props" />
-  <Import Condition="'$(IncludeVSTestReferences)' == 'true' AND Exists('$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets') AND ('$(BuildingNETCoreAppVertical)' == 'true' OR '$(BuildingNETFxVertical)' == 'true') AND '$(Language)' != 'VB'" Project="$(PackagesDir)\microsoft.net.test.sdk\$(MicrosoftDotNetTestSdkVersion)\build\netcoreapp1.0\Microsoft.Net.Test.Sdk.targets" />
-
-  <Target Name="ProducesPackageId"
-          Returns="@(PackageIds)">
-    <ItemGroup>
-      <PackageIds Include="$(Id)" />
-    </ItemGroup>
-  </Target>
+  <Import Project="$(RepositoryEngineeringDir)referenceFromRuntime.targets" />
+  <Import Project="$(RepositoryEngineeringDir)illink.targets" />
+  <Import Project="$(RepositoryEngineeringDir)notSupported.SourceBuild.targets" Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
   <Target Name="ReportConfigurationErrorMessage"
           BeforeTargets="AssignProjectConfiguration"
@@ -174,26 +126,29 @@
 
   <Target Name="GenerateReferenceSource">
     <PropertyGroup>
-      <_GenApiExePath>$(ToolsDir)GenApi.exe</_GenApiExePath>
-      <_RefSourceFileOutputPath>$(MSBuildProjectDirectory)/../ref/$(AssemblyName).cs</_RefSourceFileOutputPath>
-      <_ExcludeAPIList>$(MSBuildThisFileDirectory)tools-local/DefaultGenApiDocIds.txt</_ExcludeAPIList>
-      <_LicenseHeaderTxtPath>$(MSBuildThisFileDirectory)tools-local/LicenseHeader.txt</_LicenseHeaderTxtPath>
+      <_RefSourceFileOutputPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '..', 'ref', '$(AssemblyName).cs'))</_RefSourceFileOutputPath>
+      <_ExcludeAPIList>$(RepositoryEngineeringDir)DefaultGenApiDocIds.txt</_ExcludeAPIList>
+      <_LicenseHeaderTxtPath>$(RepositoryEngineeringDir)LicenseHeader.txt</_LicenseHeaderTxtPath>
     </PropertyGroup>
 
     <PropertyGroup>
-      <_GenAPICmd>$(DotnetToolCommand) $(_GenApiExePath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -assembly:@(IntermediateAssembly)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -libPath:$(RefPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -out:$(_RefSourceFileOutputPath)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -excludeAttributesList:$(_ExcludeAPIList)</_GenAPICmd>
-      <_GenAPICmd>$(_GenAPICmd) -headerFile:$(_LicenseHeaderTxtPath)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICommand)</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) "@(IntermediateAssembly)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --lib-path "$(RefPath.Trim('\/'))"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --out "$(_RefSourceFileOutputPath)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --exclude-attributes-list "$(_ExcludeAPIList)"</_GenAPICmd>
+      <_GenAPICmd>$(_GenAPICmd) --header-file "$(_LicenseHeaderTxtPath)"</_GenAPICmd>
+      <_GenAPICmd Condition="'$(LangVersion)' != ''">$(_GenAPICmd) --lang-version "$(LangVersion)"</_GenAPICmd>
     </PropertyGroup>
 
     <Exec Command="$(_GenAPICmd)" />
     <Message Text="Generated reference assembly source code: $(_RefSourceFileOutputPath)" />
   </Target>
 
-  <Import Project="eng/DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
+  <!-- Import Packaging targets -->
+  <Import Project="$(RepositoryEngineeringDir)Packaging.targets" />
+
+  <Import Project="$(RepositoryEngineeringDir)DisableSourceControlManagement.targets" Condition="'$(EnableSourceLink)' == 'false'" />
 
   <!-- Define this now until we can clean-up targets that depend on it in the packaging targets -->
   <Target Name="CreateVersionFileDuringBuild" />

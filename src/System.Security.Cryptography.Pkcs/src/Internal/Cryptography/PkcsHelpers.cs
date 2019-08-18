@@ -20,7 +20,9 @@ namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
-#if !netcoreapp
+        private static readonly byte[] s_pSpecifiedDefaultParameters = { 0x04, 0x00 };
+
+#if !netcoreapp && !netstandard21
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
         {
@@ -34,19 +36,24 @@ namespace Internal.Cryptography
             return GetDigestAlgorithm(oid.Value);
         }
 
-        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue)
+        internal static HashAlgorithmName GetDigestAlgorithm(string oidValue, bool forVerification = false)
         {
             switch (oidValue)
             {
                 case Oids.Md5:
+                case Oids.RsaPkcs1Md5 when forVerification:
                     return HashAlgorithmName.MD5;
                 case Oids.Sha1:
+                case Oids.RsaPkcs1Sha1 when forVerification:
                     return HashAlgorithmName.SHA1;
                 case Oids.Sha256:
+                case Oids.RsaPkcs1Sha256 when forVerification:
                     return HashAlgorithmName.SHA256;
                 case Oids.Sha384:
+                case Oids.RsaPkcs1Sha384 when forVerification:
                     return HashAlgorithmName.SHA384;
                 case Oids.Sha512:
+                case Oids.RsaPkcs1Sha512 when forVerification:
                     return HashAlgorithmName.SHA512;
                 default:
                     throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, oidValue);
@@ -155,7 +162,7 @@ namespace Internal.Cryptography
                 ContentType = contentType,
                 Content = content,
             };
-            
+
             using (AsnWriter writer = new AsnWriter(ruleSet))
             {
                 contentInfo.Encode(writer);
@@ -170,7 +177,17 @@ namespace Internal.Cryptography
             {
                 X509Certificate2 originalCert = recipient.Certificate;
                 X509Certificate2 certCopy = new X509Certificate2(originalCert.Handle);
-                CmsRecipient recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy);
+                CmsRecipient recipientCopy;
+
+                if (recipient.RSAEncryptionPadding is null)
+                {
+                    recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy);
+                }
+                else
+                {
+                    recipientCopy = new CmsRecipient(recipient.RecipientIdentifierType, certCopy, recipient.RSAEncryptionPadding);
+                }
+
                 recipientsCopy.Add(recipientCopy);
                 GC.KeepAlive(originalCert);
             }
@@ -270,7 +287,7 @@ namespace Internal.Cryptography
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.
-        /// 
+        ///
         /// Subject Key Identifier is string-ized as an upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
         internal static byte[] ToSkiBytes(this string skiString)
@@ -290,7 +307,7 @@ namespace Internal.Cryptography
 
         /// <summary>
         /// Asserts on bad or non-canonicalized input. Input must come from trusted sources.
-        /// 
+        ///
         /// Serial number is string-ized as a reversed upper case hex string. This format is part of the public api behavior and cannot be changed.
         /// </summary>
         internal static byte[] ToSerialBytes(this string serialString)
@@ -307,6 +324,24 @@ namespace Internal.Cryptography
             return ToUpperHexString(serialBytes);
         }
 
+#if netcoreapp || netstandard21
+        private static unsafe string ToUpperHexString(ReadOnlySpan<byte> ba)
+        {
+            fixed (byte* baPtr = ba)
+            {
+                return string.Create(ba.Length * 2, (new IntPtr(baPtr), ba.Length), (span, args) =>
+                {
+                    const string HexValues = "0123456789ABCDEF";
+                    int p = 0;
+                    foreach (byte b in new ReadOnlySpan<byte>((byte*)args.Item1, args.Item2))
+                    {
+                        span[p++] = HexValues[b >> 4];
+                        span[p++] = HexValues[b & 0xF];
+                    }
+                });
+            }
+        }
+#else
         private static string ToUpperHexString(ReadOnlySpan<byte> ba)
         {
             StringBuilder sb = new StringBuilder(ba.Length * 2);
@@ -318,6 +353,7 @@ namespace Internal.Cryptography
 
             return sb.ToString();
         }
+#endif
 
         /// <summary>
         /// Asserts on bad input. Input must come from trusted sources.
@@ -353,7 +389,7 @@ namespace Internal.Cryptography
         }
 
         /// <summary>
-        /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc. 
+        /// Useful helper for "upgrading" well-known CMS attributes to type-specific objects such as Pkcs9DocumentName, Pkcs9DocumentDescription, etc.
         /// </summary>
         public static Pkcs9AttributeObject CreateBestPkcs9AttributeObjectAvailable(Oid oid, byte[] encodedAttribute)
         {
@@ -380,7 +416,7 @@ namespace Internal.Cryptography
                     attributeObject = Upgrade<Pkcs9MessageDigest>(attributeObject);
                     break;
 
-#if netcoreapp
+#if netcoreapp || netstandard21
                 case Oids.LocalKeyId:
                     attributeObject = Upgrade<Pkcs9LocalKeyId>(attributeObject);
                     break;
@@ -422,7 +458,7 @@ namespace Internal.Cryptography
             }
         }
 
-        public static ReadOnlyMemory<byte> DecodeOctetString(ReadOnlyMemory<byte> encodedOctetString)
+        public static ReadOnlyMemory<byte> DecodeOctetStringAsMemory(ReadOnlyMemory<byte> encodedOctetString)
         {
             AsnReader reader = new AsnReader(encodedOctetString, AsnEncodingRules.BER);
 
@@ -431,7 +467,7 @@ namespace Internal.Cryptography
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
-            if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
+            if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> primitiveContents))
             {
                 return primitiveContents;
             }
@@ -445,6 +481,192 @@ namespace Internal.Cryptography
 
             Debug.Fail("TryCopyOctetStringBytes failed with an over-allocated array");
             throw new CryptographicException();
+        }
+
+        public static byte[] DecodeOctetString(ReadOnlyMemory<byte> encodedOctets)
+        {
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedOctets, AsnEncodingRules.BER);
+
+            const int ArbitraryStackLimit = 256;
+            Span<byte> tmp = stackalloc byte[ArbitraryStackLimit];
+            // Use stackalloc 0 so data can later hold a slice of tmp.
+            ReadOnlySpan<byte> data = stackalloc byte[0];
+            byte[] poolBytes = null;
+
+            try
+            {
+                if (!reader.TryReadPrimitiveOctetStringBytes(out var contents))
+                {
+                    if (reader.TryCopyOctetStringBytes(tmp, out int bytesWritten))
+                    {
+                        data = tmp.Slice(0, bytesWritten);
+                    }
+                    else
+                    {
+                        poolBytes = CryptoPool.Rent(reader.PeekContentBytes().Length);
+
+                        if (!reader.TryCopyOctetStringBytes(poolBytes, out bytesWritten))
+                        {
+                            Debug.Fail("TryCopyOctetStringBytes failed with a provably-large-enough buffer");
+                            throw new CryptographicException();
+                        }
+
+                        data = new ReadOnlySpan<byte>(poolBytes, 0, bytesWritten);
+                    }
+                }
+                else
+                {
+                    data = contents.Span;
+                }
+
+                reader.ThrowIfNotEmpty();
+
+                return data.ToArray();
+            }
+            finally
+            {
+                if (poolBytes != null)
+                {
+                    CryptoPool.Return(poolBytes, data.Length);
+                }
+            }
+        }
+
+        public static byte[] EncodeOctetString(byte[] octets)
+        {
+            // Write using DER to support the most readers.
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                writer.WriteOctetString(octets);
+                return writer.Encode();
+            }
+        }
+
+        private static readonly byte[] s_invalidEmptyOid = { 0x06, 0x00 };
+
+        public static byte[] EncodeUtcTime(DateTime utcTime)
+        {
+            const int maxLegalYear = 2049;
+            // Write using DER to support the most readers.
+            using (AsnWriter writer = new AsnWriter(AsnEncodingRules.DER))
+            {
+                try
+                {
+                    // Sending the DateTime through ToLocalTime here will cause the right normalization
+                    // of DateTimeKind.Unknown.
+                    //
+                    // Unknown => Local (adjust) => UTC (adjust "back", add Z marker; matches Windows)
+                    if (utcTime.Kind == DateTimeKind.Unspecified)
+                    {
+                        writer.WriteUtcTime(utcTime.ToLocalTime(), maxLegalYear);
+                    }
+                    else
+                    {
+                        writer.WriteUtcTime(utcTime, maxLegalYear);
+                    }
+
+                    return writer.Encode();
+                }
+                catch (ArgumentException ex)
+                {
+                    throw new CryptographicException(ex.Message, ex);
+                }
+            }
+        }
+
+        public static DateTime DecodeUtcTime(byte[] encodedUtcTime)
+        {
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedUtcTime, AsnEncodingRules.BER);
+            DateTimeOffset value = reader.ReadUtcTime();
+            reader.ThrowIfNotEmpty();
+            return value.UtcDateTime;
+        }
+
+        public static string DecodeOid(byte[] encodedOid)
+        {
+            // Windows compat.
+            if (s_invalidEmptyOid.AsSpan().SequenceEqual(encodedOid))
+            {
+                return string.Empty;
+            }
+
+            // Read using BER because the CMS specification says the encoding is BER.
+            AsnReader reader = new AsnReader(encodedOid, AsnEncodingRules.BER);
+            string value = reader.ReadObjectIdentifierAsString();
+            reader.ThrowIfNotEmpty();
+            return value;
+        }
+
+        public static bool TryGetRsaOaepEncryptionPadding(
+            ReadOnlyMemory<byte>? parameters,
+            out RSAEncryptionPadding rsaEncryptionPadding,
+            out Exception exception)
+        {
+            exception = null;
+            rsaEncryptionPadding = null;
+
+            if (parameters == null || parameters.Value.IsEmpty)
+            {
+                exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                return false;
+            }
+
+            try
+            {
+                OaepParamsAsn oaepParameters = OaepParamsAsn.Decode(parameters.Value, AsnEncodingRules.DER);
+
+                if (oaepParameters.MaskGenFunc.Algorithm.Value != Oids.Mgf1 ||
+                    oaepParameters.MaskGenFunc.Parameters == null ||
+                    oaepParameters.PSourceFunc.Algorithm.Value != Oids.PSpecified
+                    )
+                {
+                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    return false;
+                }
+
+                AlgorithmIdentifierAsn mgf1AlgorithmIdentifier = AlgorithmIdentifierAsn.Decode(oaepParameters.MaskGenFunc.Parameters.Value, AsnEncodingRules.DER);
+
+                if (mgf1AlgorithmIdentifier.Algorithm.Value != oaepParameters.HashFunc.Algorithm.Value)
+                {
+                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    return false;
+                }
+
+                if (oaepParameters.PSourceFunc.Parameters != null &&
+                    !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(s_pSpecifiedDefaultParameters))
+                {
+                    exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
+                    return false;
+                }
+
+                switch (oaepParameters.HashFunc.Algorithm.Value)
+                {
+                    case Oids.Sha1:
+                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA1;
+                        return true;
+                    case Oids.Sha256:
+                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA256;
+                        return true;
+                    case Oids.Sha384:
+                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA384;
+                        return true;
+                    case Oids.Sha512:
+                        rsaEncryptionPadding = RSAEncryptionPadding.OaepSHA512;
+                        return true;
+                    default:
+                        exception = new CryptographicException(
+                            SR.Cryptography_Cms_UnknownAlgorithm,
+                            oaepParameters.HashFunc.Algorithm.Value);
+                        return false;
+                }
+            }
+            catch (CryptographicException e)
+            {
+                exception = e;
+                return false;
+            }
         }
     }
 }

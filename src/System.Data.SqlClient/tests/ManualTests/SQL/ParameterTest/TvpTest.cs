@@ -17,6 +17,8 @@ using System.Transactions;
 
 using Microsoft.SqlServer.Server;
 using Xunit;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace System.Data.SqlClient.ManualTesting.Tests
 {
@@ -42,11 +44,42 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         private string _connStr;
 
         [ActiveIssue(27858, TestPlatforms.AnyUnix)]
-        [CheckConnStrSetupFact]
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
         public void TestMain()
         {
             Assert.True(RunTestCoreAndCompareWithBaseline());
         }
+
+        [ConditionalFact(typeof(DataTestUtility), nameof(DataTestUtility.AreConnStringsSetup))]
+        public void TestPacketNumberWraparound()
+        {
+            // this test uses a specifically crafted sql record enumerator and data to put the TdsParserStateObject.WritePacket(byte,bool)
+            // into a state where it can't differentiate between a packet in the middle of a large packet-set after a byte counter wraparound
+            // and the first packet of the connection and in doing so trips over a check for packet length from the input which has been
+            // forced to tell it that there is no output buffer space left, this causes an uncancellable infinite loop
+
+            // if the enumerator is completely read to the end then the bug is no longer present and the packet creation task returns,
+            // if the timeout occurs it is probable (but not absolute) that the write is stuck
+
+            var enumerator = new WraparoundRowEnumerator(1000000);
+
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            int returned = Task.WaitAny(
+                Task.Factory.StartNew(
+                    () => RunPacketNumberWraparound(enumerator),
+                    TaskCreationOptions.DenyChildAttach | TaskCreationOptions.LongRunning
+                ),
+                Task.Delay(TimeSpan.FromSeconds(60))
+            );
+            stopwatch.Stop();
+            if (enumerator.MaxCount != enumerator.Count)
+            {
+                Console.WriteLine($"enumerator.Count={enumerator.Count}, enumerator.MaxCount={enumerator.MaxCount}, elapsed={stopwatch.Elapsed.TotalSeconds}");
+            }
+            Assert.True(enumerator.MaxCount == enumerator.Count);
+        }
+
 
         public TvpTest()
         {
@@ -216,7 +249,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-#region Main test methods
+        #region Main test methods
         private void ColumnBoundariesTest()
         {
             IEnumerator<StePermutation> boundsMD = SteStructuredTypeBoundaries.AllColumnTypesExceptUdts.GetEnumerator(
@@ -309,7 +342,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        public void QueryHintsTest()
+        private void QueryHintsTest()
         {
             using (SqlConnection conn = new SqlConnection(_connStr))
             {
@@ -550,9 +583,34 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-#endregion
+        private static async Task RunPacketNumberWraparound(WraparoundRowEnumerator enumerator)
+        {
+            using (var connection = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (var cmd = new SqlCommand("unimportant")
+            {
+                CommandType = System.Data.CommandType.StoredProcedure,
+                Connection = connection,
+            })
+            {
+                await cmd.Connection.OpenAsync();
+                cmd.Parameters.Add(new SqlParameter("@rows", SqlDbType.Structured)
+                {
+                    TypeName = "unimportant",
+                    Value = enumerator,
+                });
+                try
+                {
+                    await cmd.ExecuteNonQueryAsync();
+                }
+                catch (Exception)
+                {
+                    // ignore the errors caused by the sproc and table type not existing
+                }
+            }
+        }
+        #endregion
 
-#region Utility Methods
+        #region Utility Methods
 
         private bool AllowableDifference(string source, object result, StePermutation metadata)
         {
@@ -1052,7 +1110,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 SqlCommand cmd = new SqlCommand(tsql.ToString(), conn);
                 cmd.ExecuteNonQuery();
 
-                // and create the proc that uses the type            
+                // and create the proc that uses the type
                 cmd.CommandText = string.Format("CREATE PROC {0}(@tvp {1} READONLY) AS SELECT * FROM @tvp order by {2}",
                         GetProcName(tvpPerm), GetTypeName(tvpPerm), colOrdinal - 1);
                 cmd.ExecuteNonQuery();
@@ -1127,7 +1185,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                     Console.WriteLine("ArgumentException: {0}", ae.Message);
                 }
 
-                // And clean up. If an error is thrown, the connection being recycled 
+                // And clean up. If an error is thrown, the connection being recycled
                 //  will roll back the transaction
                 if (null != cmd.Transaction)
                 {
@@ -1371,7 +1429,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
 
-#endregion
+        #endregion
     }
 
     internal class TvpRestartableReader : DbDataReader
@@ -1390,72 +1448,72 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             _currentRow = -1;
         }
 
-        override public int Depth
+        public override int Depth
         {
             get { return 0; }
         }
 
-        override public int FieldCount
+        public override int FieldCount
         {
             get { return _sourceData[_currentRow].FieldCount; }
         }
 
-        override public bool HasRows
+        public override bool HasRows
         {
             get { return _sourceData.Count > 0; }
         }
 
-        override public bool IsClosed
+        public override bool IsClosed
         {
             get { return false; }
         }
 
-        override public int RecordsAffected
+        public override int RecordsAffected
         {
             get { return 0; }
         }
 
-        override public object this[int ordinal]
+        public override object this[int ordinal]
         {
             get { return GetValue(ordinal); }
         }
 
-        override public object this[string name]
+        public override object this[string name]
         {
             get { return GetValue(GetOrdinal(name)); }
         }
 
-        override public void Close()
+        public override void Close()
         {
             _currentRow = _sourceData.Count;
         }
 
-        override public string GetDataTypeName(int ordinal)
+        public override string GetDataTypeName(int ordinal)
         {
             return _sourceData[_currentRow].GetDataTypeName(ordinal);
         }
 
-        override public IEnumerator GetEnumerator()
+        public override IEnumerator GetEnumerator()
         {
             return _sourceData.GetEnumerator();
         }
 
-        override public Type GetFieldType(int ordinal)
+        public override Type GetFieldType(int ordinal)
         {
             return _sourceData[_currentRow].GetFieldType(ordinal);
         }
 
-        override public string GetName(int ordinal)
+        public override string GetName(int ordinal)
         {
             return _sourceData[_currentRow].GetName(ordinal);
         }
 
-        override public int GetOrdinal(string name)
+        public override int GetOrdinal(string name)
         {
             return _sourceData[_currentRow].GetOrdinal(name);
         }
 
-        override public DataTable GetSchemaTable()
+        public override DataTable GetSchemaTable()
         {
             SqlDataRecord rec = _sourceData[0];
 
@@ -1517,37 +1575,37 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return schemaTable;
         }
 
-        override public bool GetBoolean(int ordinal)
+        public override bool GetBoolean(int ordinal)
         {
             return _sourceData[_currentRow].GetBoolean(ordinal);
         }
 
-        override public byte GetByte(int ordinal)
+        public override byte GetByte(int ordinal)
         {
             return _sourceData[_currentRow].GetByte(ordinal);
         }
 
-        override public long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
+        public override long GetBytes(int ordinal, long dataOffset, byte[] buffer, int bufferOffset, int length)
         {
             return _sourceData[_currentRow].GetBytes(ordinal, dataOffset, buffer, bufferOffset, length);
         }
 
-        override public char GetChar(int ordinal)
+        public override char GetChar(int ordinal)
         {
             return _sourceData[_currentRow].GetChar(ordinal);
         }
 
-        override public long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
+        public override long GetChars(int ordinal, long dataOffset, char[] buffer, int bufferOffset, int length)
         {
             return _sourceData[_currentRow].GetChars(ordinal, dataOffset, buffer, bufferOffset, length);
         }
 
-        override public DateTime GetDateTime(int ordinal)
+        public override DateTime GetDateTime(int ordinal)
         {
             return _sourceData[_currentRow].GetDateTime(ordinal);
         }
 
-        override public decimal GetDecimal(int ordinal)
+        public override decimal GetDecimal(int ordinal)
         {
             // DataRecord may have illegal values for Decimal...
             decimal result;
@@ -1562,63 +1620,63 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             return result;
         }
 
-        override public double GetDouble(int ordinal)
+        public override double GetDouble(int ordinal)
         {
             return _sourceData[_currentRow].GetDouble(ordinal);
         }
 
-        override public float GetFloat(int ordinal)
+        public override float GetFloat(int ordinal)
         {
             return _sourceData[_currentRow].GetFloat(ordinal);
         }
 
-        override public Guid GetGuid(int ordinal)
+        public override Guid GetGuid(int ordinal)
         {
             return _sourceData[_currentRow].GetGuid(ordinal);
         }
 
-        override public short GetInt16(int ordinal)
+        public override short GetInt16(int ordinal)
         {
             return _sourceData[_currentRow].GetInt16(ordinal);
         }
 
-        override public int GetInt32(int ordinal)
+        public override int GetInt32(int ordinal)
         {
             return _sourceData[_currentRow].GetInt32(ordinal);
         }
 
-        override public long GetInt64(int ordinal)
+        public override long GetInt64(int ordinal)
         {
             return _sourceData[_currentRow].GetInt64(ordinal);
         }
 
-        override public string GetString(int ordinal)
+        public override string GetString(int ordinal)
         {
             return _sourceData[_currentRow].GetString(ordinal);
         }
 
-        override public object GetValue(int ordinal)
+        public override object GetValue(int ordinal)
         {
             return _sourceData[_currentRow].GetValue(ordinal);
         }
 
-        override public int GetValues(object[] values)
+        public override int GetValues(object[] values)
         {
             return _sourceData[_currentRow].GetValues(values);
         }
 
-        override public bool IsDBNull(int ordinal)
+        public override bool IsDBNull(int ordinal)
         {
             return _sourceData[_currentRow].IsDBNull(ordinal);
         }
 
-        override public bool NextResult()
+        public override bool NextResult()
         {
             Close();
             return false;
         }
 
-        override public bool Read()
+        public override bool Read()
         {
             _currentRow++;
 
@@ -1626,4 +1684,49 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
     }
 
+    internal class WraparoundRowEnumerator : IEnumerable<SqlDataRecord>, IEnumerator<SqlDataRecord>
+    {
+        private int _count;
+        private int _maxCount;
+        private SqlDataRecord _record;
+
+        public WraparoundRowEnumerator(int maxCount)
+        {
+            _maxCount = maxCount;
+            _record = new SqlDataRecord(new SqlMetaData("someData", SqlDbType.VarBinary, 8000));
+
+            // 56 31 0 0 is result of calling BitConverter.GetBytes((int)7992)
+            // The rest of the bytes are just padding to get 56, 31, 0, 0 to be in bytes 8-11 of TdsParserStatObject._outBuff after the 256th packet
+            _record.SetBytes(
+                0,
+                0,
+                new byte[] { 1, 2, 56, 31, 0, 0, 7, 8, 9, 10, 11, 12, 13, 14 },
+                0,
+                14);
+
+            // change any of the 56 31 0 0 bytes and this program completes as expected in a couple seconds
+        }
+
+        public bool MoveNext()
+        {
+            _count++;
+            return _count < _maxCount;
+        }
+
+        public SqlDataRecord Current => _record;
+
+        object IEnumerator.Current => Current;
+
+        public int Count { get => this._count; set => this._count = value; }
+        public int MaxCount { get => this._maxCount; set => this._maxCount = value; }
+
+        public IEnumerator<SqlDataRecord> GetEnumerator() => this;
+
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+        public void Dispose() { }
+        public void Reset() { }
+
+
+    }
 }

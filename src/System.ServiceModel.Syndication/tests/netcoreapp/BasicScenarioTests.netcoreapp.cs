@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -130,7 +130,7 @@ namespace System.ServiceModel.Syndication.Tests
             Assert.Equal(new Uri("http://value-EntryLinkHref-kind-relativeorabsolute-localName-link-ns-http//www.w3.org/2005/Atom-end"), feed.Items.First().Links.First().Uri);
             Assert.Equal(new Uri("http://value-EntryContentSrc-kind-relativeorabsolute-localName-content-ns-http://www.w3.org/2005/Atom-end"), ((UrlSyndicationContent)feed.Items.First().Content).Url);
         }
-        
+
         [Fact]
         public static void SyndicationFeed_RSS_Optional_Elements()
         {
@@ -198,63 +198,6 @@ namespace System.ServiceModel.Syndication.Tests
                     Assert.Equal("input Name", feed.TextInput.Name);
                     Assert.Equal("http://www.contoso.no/search?", feed.TextInput.Link.Uri.ToString());
                 });
-        }
-
-        public static TheoryData<TimeSpan> InvalidTimeToLiveValues
-        {
-            get
-            {
-                TheoryData<TimeSpan> data = new TheoryData<TimeSpan>();
-
-                data.Add(new TimeSpan(days: 0, hours: 0, minutes: 1, seconds: 1, milliseconds: 0));
-                data.Add(new TimeSpan(days: 0, hours: 0, minutes: 1, seconds: 0, milliseconds: 1));
-                data.Add(new TimeSpan(hours: 0, minutes: -1, seconds: 0));
-
-                return data;
-            }
-        }
-
-        public static TheoryData<TimeSpan> ValidTimeToLiveValues
-        {
-            get
-            {
-                TheoryData<TimeSpan> data = new TheoryData<TimeSpan>();
-
-                data.Add(new TimeSpan(hours: 0, minutes: 0, seconds: 0));
-                data.Add(new TimeSpan(hours: 0, minutes: 1, seconds: 0));
-                data.Add(new TimeSpan(hours: 0, minutes: 1000, seconds: 0));
-
-                return data;
-            }
-        }
-
-        [Theory, MemberData(nameof(InvalidTimeToLiveValues))]
-        public static void SyndicationFeed_TimeToLive_Validation_Throws(TimeSpan invalidTimeToLive)
-        {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-            {
-                var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
-                    new Uri("http://www.Contoso.com/news"));
-                feed.TimeToLive = invalidTimeToLive;
-            });
-        }
-
-        [Theory, MemberData(nameof(ValidTimeToLiveValues))]
-        public static void SyndicationFeed_TimeToLive_Success(TimeSpan validTimeToLive)
-        {
-            var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
-                new Uri("http://www.Contoso.com/news"));
-            feed.TimeToLive = validTimeToLive;
-            Assert.Equal(validTimeToLive, feed.TimeToLive.Value);
-        }
-
-        [Fact]
-        public static void SyndicationFeed_TimeToLive_Null_Success()
-        {
-            var feed = new SyndicationFeed("Contoso News", "<div>Most recent news from Contoso</div>",
-                new Uri("http://www.Contoso.com/news"));
-            feed.TimeToLive = null;
-            Assert.False(feed.TimeToLive.HasValue);
         }
 
     }

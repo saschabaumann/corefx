@@ -17,35 +17,17 @@ namespace System.Diagnostics
         private long _startTimeStamp;
         private bool _isRunning;
 
-        // "Frequency" stores the frequency of the high-resolution performance counter, 
-        // if one exists. Otherwise it will store TicksPerSecond. 
+        // "Frequency" stores the frequency of the high-resolution performance counter,
+        // if one exists. Otherwise it will store TicksPerSecond.
         // The frequency cannot change while the system is running,
-        // so we only need to initialize it once. 
-        public static readonly long Frequency;
-        public static readonly bool IsHighResolution;
+        // so we only need to initialize it once.
+        public static readonly long Frequency = QueryPerformanceFrequency();
+        public static readonly bool IsHighResolution = true;
 
         // performance-counter frequency, in counts per ticks.
-        // This can speed up conversion from high frequency performance-counter 
-        // to ticks. 
-        private static readonly double s_tickFrequency;
-
-        static Stopwatch()
-        {
-            bool succeeded = QueryPerformanceFrequency(out Frequency);
-
-            if (!succeeded)
-            {
-                IsHighResolution = false;
-                Frequency = TicksPerSecond;
-                s_tickFrequency = 1;
-            }
-            else
-            {
-                IsHighResolution = true;
-                s_tickFrequency = TicksPerSecond;
-                s_tickFrequency /= Frequency;
-            }
-        }
+        // This can speed up conversion from high frequency performance-counter
+        // to ticks.
+        private static readonly double s_tickFrequency = (double)TicksPerSecond / Frequency;
 
         public Stopwatch()
         {
@@ -81,8 +63,8 @@ namespace System.Diagnostics
 
                 if (_elapsed < 0)
                 {
-                    // When measuring small time periods the Stopwatch.Elapsed* 
-                    // properties can return negative values.  This is due to 
+                    // When measuring small time periods the Stopwatch.Elapsed*
+                    // properties can return negative values.  This is due to
                     // bugs in the basic input/output system (BIOS) or the hardware
                     // abstraction layer (HAL) on machines with variable-speed CPUs
                     // (e.g. Intel SpeedStep).
@@ -129,19 +111,11 @@ namespace System.Diagnostics
 
         public static long GetTimestamp()
         {
-            if (IsHighResolution)
-            {
-                long timestamp = 0;
-                QueryPerformanceCounter(out timestamp);
-                return timestamp;
-            }
-            else
-            {
-                return DateTime.UtcNow.Ticks;
-            }
+            Debug.Assert(IsHighResolution);
+            return QueryPerformanceCounter();
         }
 
-        // Get the elapsed ticks.        
+        // Get the elapsed ticks.
         private long GetRawElapsedTicks()
         {
             long timeElapsed = _elapsed;
@@ -149,7 +123,7 @@ namespace System.Diagnostics
             if (_isRunning)
             {
                 // If the Stopwatch is running, add elapsed time since
-                // the Stopwatch is started last time. 
+                // the Stopwatch is started last time.
                 long currentTimeStamp = GetTimestamp();
                 long elapsedUntilNow = currentTimeStamp - _startTimeStamp;
                 timeElapsed += elapsedUntilNow;
@@ -157,21 +131,12 @@ namespace System.Diagnostics
             return timeElapsed;
         }
 
-        // Get the elapsed ticks.        
+        // Get the elapsed ticks.
         private long GetElapsedDateTimeTicks()
         {
-            long rawTicks = GetRawElapsedTicks();
-            if (IsHighResolution)
-            {
-                // convert high resolution perf counter to DateTime ticks
-                double dticks = rawTicks;
-                dticks *= s_tickFrequency;
-                return unchecked((long)dticks);
-            }
-            else
-            {
-                return rawTicks;
-            }
+            Debug.Assert(IsHighResolution);
+            // convert high resolution perf counter to DateTime ticks
+            return unchecked((long)(GetRawElapsedTicks() * s_tickFrequency));
         }
     }
 }

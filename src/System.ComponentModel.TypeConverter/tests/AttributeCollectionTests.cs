@@ -15,26 +15,25 @@ namespace System.ComponentModel.Tests
         public void Ctor_Default()
         {
             var subAttributeCollection = new SubAttributeCollection();
-            Assert.Throws<NullReferenceException>(() => subAttributeCollection.Count);
+            Assert.Equal(0, subAttributeCollection.Count);
+            Assert.Empty(subAttributeCollection);
+        }
+
+        public static IEnumerable<object[]> Ctor_Attributes_TestData()
+        {
+            yield return new object[] { GetAttributes().Take(20).ToArray() };
+            yield return new object[] { GetAttributes().Take(1).ToArray() };
+            yield return new object[] { new Attribute[0] };
+            yield return new object[] { null };
         }
 
         [Theory]
-        [InlineData(20)]
-        [InlineData(1000)]
-        [InlineData(1)]
-        [InlineData(0)]
-        public void Ctor_Attributes(int count)
+        [MemberData(nameof(Ctor_Attributes_TestData))]
+        public void Ctor_Attributes(Attribute[] attributes)
         {
-            Attribute[] attributes = GetAttributes().Take(count).ToArray();
             var attributeCollection = new AttributeCollection(attributes);
-            Assert.Equal(attributes, attributeCollection.Cast<Attribute>());
-        }
-
-        [Fact]
-        public void Ctor_NullAttributes_ReturnsEmpty()
-        {
-            var collection = new AttributeCollection(null);
-            Assert.Equal(0, collection.Count);
+            Assert.Equal(attributes?.Length ?? 0, attributeCollection.Count);
+            Assert.Equal(attributes ?? new Attribute[0], attributeCollection.Cast<Attribute>());
         }
 
         [Fact]
@@ -71,6 +70,15 @@ namespace System.ComponentModel.Tests
             Assert.Equal(attributeCollection.Cast<Attribute>(), array.Cast<Attribute>().Skip(index));
         }
 
+        [Fact]
+        public void CopyTo_Default_Nop()
+        {
+            var attributeCollection = new SubAttributeCollection();
+            var array = new object[] { 1, 2, 3 };
+            attributeCollection.CopyTo(array, 1);
+            Assert.Equal(new object[] { 1, 2, 3}, array);
+        }
+
         [Theory]
         [InlineData(20)]
         [InlineData(1000)]
@@ -96,6 +104,14 @@ namespace System.ComponentModel.Tests
             Assert.True(attributeCollection.Contains(attributes));
             Assert.True(attributeCollection.Contains(new Attribute[0]));
             Assert.True(attributeCollection.Contains((Attribute[])null));
+            Assert.False(attributeCollection.Contains(new Attribute[] { new ReadOnlyAttribute(true) }));
+        }
+
+        [Fact]
+        public void Contains_Default_ReturnsFalse()
+        {
+            var attributeCollection = new SubAttributeCollection();
+            Assert.False(attributeCollection.Contains(new ReadOnlyAttribute(true)));
             Assert.False(attributeCollection.Contains(new Attribute[] { new ReadOnlyAttribute(true) }));
         }
 
@@ -298,7 +314,15 @@ namespace System.ComponentModel.Tests
             Assert.False(collection.Matches(notInCollection));
         }
 
-        private IEnumerable<Attribute> GetAttributes()
+        [Fact]
+        public void Matches_Default_ReturnsFalse()
+        {
+            var attributeCollection = new SubAttributeCollection();
+            Assert.False(attributeCollection.Matches(new ReadOnlyAttribute(true)));
+            Assert.False(attributeCollection.Matches(new Attribute[] { new ReadOnlyAttribute(true) }));
+        }
+
+        private static IEnumerable<Attribute> GetAttributes()
         {
             while (true)
             {
@@ -309,13 +333,13 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        private class TestAttribute1 : Attribute { }
-        private class TestAttribute2 : Attribute { }
-        private class TestAttribute3 : Attribute { }
-        private class TestAttribute4 : Attribute { }
-        private class TestAttribute5a : Attribute { }
-        private class TestAttribute5b : TestAttribute5a { }
-        private class TestAttribute6 : Attribute { }
+        public class TestAttribute1 : Attribute { }
+        public class TestAttribute2 : Attribute { }
+        public class TestAttribute3 : Attribute { }
+        public class TestAttribute4 : Attribute { }
+        public class TestAttribute5a : Attribute { }
+        public class TestAttribute5b : TestAttribute5a { }
+        public class TestAttribute6 : Attribute { }
 
         private class TestAttributeWithDefaultFieldButNotDefault : Attribute
         {

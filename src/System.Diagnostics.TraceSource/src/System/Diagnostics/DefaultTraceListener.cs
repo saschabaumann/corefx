@@ -19,37 +19,12 @@ namespace System.Diagnostics
     /// </devdoc>
     public class DefaultTraceListener : TraceListener
     {
-        private class DefaultTraceDebugProvider : DebugProvider
-        {
-            private const int InternalWriteSize = 16384;
-            
-            public override void Write(string message)
-            {
-                // really huge messages mess up both VS and dbmon, so we chop it up into 
-                // reasonable chunks if it's too big
-                if (message == null || message.Length <= InternalWriteSize)
-                {
-                    base.Write(message);
-                }
-                else
-                {
-                    int offset;
-                    for (offset = 0; offset < message.Length - InternalWriteSize; offset += InternalWriteSize)
-                    {
-                        base.Write(message.Substring(offset, InternalWriteSize));
-                    }
-                    base.Write(message.Substring(offset));
-                }
-            }
-        }
-
-        private static readonly DebugProvider s_provider = new DefaultTraceDebugProvider();
-        private bool _assertUIEnabled; 
+        private bool _assertUIEnabled;
         private bool _settingsInitialized;
         private string _logFileName;
 
         /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with 
+        /// <para>Initializes a new instance of the <see cref='System.Diagnostics.DefaultTraceListener'/> class with
         ///    Default as its <see cref='System.Diagnostics.TraceListener.Name'/>.</para>
         /// </devdoc>
         public DefaultTraceListener()
@@ -57,31 +32,31 @@ namespace System.Diagnostics
         {
         }
 
-        public bool AssertUiEnabled 
+        public bool AssertUiEnabled
         {
-            get 
-            { 
-                if (!_settingsInitialized) InitializeSettings();
-                return _assertUIEnabled; 
-            }
-            set 
+            get
             {
                 if (!_settingsInitialized) InitializeSettings();
-                _assertUIEnabled = value; 
+                return _assertUIEnabled;
+            }
+            set
+            {
+                if (!_settingsInitialized) InitializeSettings();
+                _assertUIEnabled = value;
             }
         }
 
-        public string LogFileName 
+        public string LogFileName
         {
-            get 
-            { 
+            get
+            {
                 if (!_settingsInitialized) InitializeSettings();
-                return _logFileName; 
+                return _logFileName;
             }
-            set 
-            { 
+            set
+            {
                 if (!_settingsInitialized) InitializeSettings();
-                _logFileName = value; 
+                _logFileName = value;
             }
         }
 
@@ -114,20 +89,14 @@ namespace System.Diagnostics
             {
                 stackTrace = "";
             }
-            // Tracked by #32955: WriteAssert should write "stackTrace" rather than string.Empty. 
-            WriteAssert(string.Empty, message, detailMessage);
+            WriteAssert(stackTrace, message, detailMessage);
             if (AssertUiEnabled)
             {
-                // Tracked by #32955: Currently AssertUiEnabled is true by default but we are not calling Enviroment.FailFast as Debug.Fail does 
-                // s_provider.ShowDialog(stackTrace, message, detailMessage, "Assertion Failed");
-            }
-            if (Debugger.IsAttached)
-            {
-                Debugger.Break();
+                DebugProvider.FailCore(stackTrace, message, detailMessage, "Assertion Failed");
             }
         }
 
-        private void InitializeSettings() 
+        private void InitializeSettings()
         {
             // don't use the property setters here to avoid infinite recursion.
             _assertUIEnabled = DiagnosticsConfiguration.AssertUIEnabled;
@@ -137,19 +106,17 @@ namespace System.Diagnostics
 
         private void WriteAssert(string stackTrace, string message, string detailMessage)
         {
-            // Tracked by #32955: WriteAssert should indent "assertMessage" same way Debug.Fail does.
-            string assertMessage = SR.DebugAssertBanner + Environment.NewLine
-                                            + SR.DebugAssertShortMessage + Environment.NewLine
-                                            + message + Environment.NewLine
-                                            + SR.DebugAssertLongMessage + Environment.NewLine +
-                                            detailMessage + Environment.NewLine
-                                            + stackTrace;
-            WriteLine(assertMessage);
+            WriteLine(SR.DebugAssertBanner + Environment.NewLine
+                   + SR.DebugAssertShortMessage + Environment.NewLine
+                   + message + Environment.NewLine
+                   + SR.DebugAssertLongMessage + Environment.NewLine
+                   + detailMessage + Environment.NewLine
+                   + stackTrace);
         }
 
         /// <devdoc>
         ///    <para>
-        ///       Writes the output using <see cref="System.Diagnostics.Debug.Write"/>.
+        ///       Writes the output using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
         public override void Write(string message)
@@ -159,7 +126,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Writes the output followed by a line terminator using <see cref="System.Diagnostics.Debug.Write"/>.
+        ///       Writes the output followed by a line terminator using <see cref="System.Diagnostics.Debug.Write(string)"/>.
         ///    </para>
         /// </devdoc>
         public override void WriteLine(string message)
@@ -169,23 +136,32 @@ namespace System.Diagnostics
 
         private void WriteLine(string message, bool useLogFile)
         {
-            if (NeedIndent) 
+            if (NeedIndent)
                 WriteIndent();
 
             // The concat is done here to enable a single call to Write
-            Write(message + Environment.NewLine, useLogFile); 
+            Write(message + Environment.NewLine, useLogFile);
             NeedIndent = true;
         }
 
         private void Write(string message, bool useLogFile)
         {
-            if (NeedIndent) 
-                WriteIndent();
+            if (message == null)
+            {
+                message = string.Empty;
+            }
 
-            s_provider.Write(message);
+            if (NeedIndent && message.Length != 0)
+            {
+                WriteIndent();
+            }
+
+            DebugProvider.WriteCore(message);
 
             if (useLogFile && !string.IsNullOrEmpty(LogFileName))
+            {
                 WriteToLogFile(message);
+            }
         }
 
         private void WriteToLogFile(string message)
@@ -196,7 +172,7 @@ namespace System.Diagnostics
             }
             catch (Exception e)
             {
-                WriteLine(string.Format(SR.ExceptionOccurred, LogFileName, e.ToString()), useLogFile: false);
+                WriteLine(SR.Format(SR.ExceptionOccurred, LogFileName, e), useLogFile: false);
             }
         }
     }

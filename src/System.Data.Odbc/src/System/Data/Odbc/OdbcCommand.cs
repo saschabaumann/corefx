@@ -159,7 +159,7 @@ namespace System.Data.Odbc
             get
             {
                 string value = _commandText;
-                return ((null != value) ? value : ADP.StrEmpty);
+                return ((null != value) ? value : string.Empty);
             }
             set
             {
@@ -796,7 +796,7 @@ namespace System.Data.Odbc
 
                             default:
                                 // this should NEVER happen
-                                Debug.Assert(false, "ExecuteReaderObjectcalled with unsupported ODBC API method.");
+                                Debug.Fail("ExecuteReaderObjectcalled with unsupported ODBC API method.");
                                 throw ADP.InvalidOperation(method.ToString());
                         }
 
@@ -819,7 +819,7 @@ namespace System.Data.Odbc
 
                 // XXXCommand.Execute should position reader on first row returning result
                 // any exceptions in the initial non-row returning results should be thrown
-                // from from ExecuteXXX not the DataReader
+                // from ExecuteXXX not the DataReader
                 if (!localReader.IsBehavior(CommandBehavior.SchemaOnly))
                 {
                     localReader.FirstResult();
@@ -1112,7 +1112,7 @@ namespace System.Data.Odbc
                 }
                 catch (Exception e)
                 {
-                    // 
+                    //
                     if (ADP.IsCatchableExceptionType(e))
                     {
                         _stmt = null;
@@ -1135,7 +1135,7 @@ namespace System.Data.Odbc
                 }
                 catch (Exception e)
                 {
-                    // 
+                    //
                     if (ADP.IsCatchableExceptionType(e))
                     {
                         _keyinfostmt = null;

@@ -19,7 +19,7 @@ namespace System.Diagnostics
     {
         internal byte[] dataBuf;
         internal int bufOffset;
-        private EventLogInternal owner;
+        private readonly EventLogInternal owner;
         private string category;
         private string message;
 
@@ -276,19 +276,19 @@ namespace System.Diagnostics
 
                 int userNameLen = 256;
                 int domainNameLen = 256;
-                int sidNameUse = 0;
-                StringBuilder bufUserName = new StringBuilder(userNameLen);
-                StringBuilder bufDomainName = new StringBuilder(domainNameLen);
-                StringBuilder retUserName = new StringBuilder();
-
-                if (Interop.Kernel32.LookupAccountSid(MachineName, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, ref sidNameUse) != 0)
+                unsafe
                 {
-                    retUserName.Append(bufDomainName.ToString());
-                    retUserName.Append("\\");
-                    retUserName.Append(bufUserName.ToString());
+                    fixed (char* bufUserName = new char[userNameLen])
+                    fixed (char* bufDomainName = new char[domainNameLen])
+                    {
+                        if (Interop.Advapi32.LookupAccountSid(MachineName, sid, bufUserName, ref userNameLen, bufDomainName, ref domainNameLen, out int sidNameUse) != 0)
+                        {
+                            return new string(bufDomainName) + "\\" + new string(bufUserName);
+                        }
+                    }
                 }
 
-                return retUserName.ToString();
+                return string.Empty;
             }
         }
 
@@ -474,6 +474,5 @@ namespace System.Diagnostics
         }
 
         private static readonly DateTime beginningOfTime = new DateTime(1970, 1, 1, 0, 0, 0);
-        private const int OFFSETFIXUP = 4 + 4 + 4 + 4 + 4 + 4 + 2 + 2 + 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4;
     }
 }

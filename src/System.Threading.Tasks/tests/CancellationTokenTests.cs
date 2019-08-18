@@ -180,7 +180,6 @@ namespace System.Threading.Tasks.Tests
             tokenSource.Dispose(); //Repeat calls to Dispose should be ok.
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Relies on quirked behavior to not throw in token.Register when already disposed")]
         [Fact]
         public static void TokenSourceDispose_Negative()
         {
@@ -207,7 +206,7 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Test passive signalling.
-        /// 
+        ///
         /// Gets a token, then polls on its ThrowIfCancellationRequested property.
         /// </summary>
         /// <returns></returns>
@@ -227,7 +226,7 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Test active signalling.
-        /// 
+        ///
         /// Gets a token, registers a notification callback and ensure it is called.
         /// </summary>
         /// <returns></returns>
@@ -298,7 +297,7 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Test late enlistment.
-        /// 
+        ///
         /// If a handler is added to a 'canceled' cancellation token, the handler is called immediately.
         /// </summary>
         /// <returns></returns>
@@ -320,7 +319,7 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Test the wait handle exposed by the cancellation token
-        /// 
+        ///
         /// The signal occurs on a separate thread, and should happen after the wait begins.
         /// </summary>
         /// <returns></returns>
@@ -345,7 +344,7 @@ namespace System.Threading.Tasks.Tests
 
         /// <summary>
         /// Test the wait handle exposed by the cancellation token
-        /// 
+        ///
         /// The signal occurs on a separate thread, and should happen after the wait begins.
         /// </summary>
         /// <returns></returns>
@@ -470,12 +469,12 @@ namespace System.Threading.Tasks.Tests
             token.Register(() => earlyEnlistedTokenSource.Cancel());
             tokenSource.Cancel();
 
-            Assert.Equal(true, earlyEnlistedTokenSource.IsCancellationRequested);
+            Assert.True(earlyEnlistedTokenSource.IsCancellationRequested);
 
 
             CancellationTokenSource lateEnlistedTokenSource = new CancellationTokenSource();
             token.Register(() => lateEnlistedTokenSource.Cancel());
-            Assert.Equal(true, lateEnlistedTokenSource.IsCancellationRequested);
+            Assert.True(lateEnlistedTokenSource.IsCancellationRequested);
         }
 
         /// <summary>
@@ -526,7 +525,7 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
 
-            // Main test body 
+            // Main test body
             ArgumentException caughtException = null;
             token.Register(() =>
                                {
@@ -568,7 +567,7 @@ namespace System.Threading.Tasks.Tests
             CancellationTokenSource tokenSource = new CancellationTokenSource();
             CancellationToken token = tokenSource.Token;
 
-            // Main test body 
+            // Main test body
             AggregateException caughtException = null;
             token.Register(() => { throw new ArgumentException(); });
             token.Register(() => { throw new InvalidOperationException(); });
@@ -663,7 +662,7 @@ namespace System.Threading.Tasks.Tests
             }
 
             {
-                // different registrations on one real token    
+                // different registrations on one real token
                 CancellationTokenSource cts1 = new CancellationTokenSource();
 
                 CancellationTokenRegistration ctr1 = cts1.Token.Register(() => outerCTS.Cancel());
@@ -684,7 +683,7 @@ namespace System.Threading.Tasks.Tests
 
             {
                 // registrations on different real tokens.
-                // different registrations on one token    
+                // different registrations on one token
                 CancellationTokenSource cts1 = new CancellationTokenSource();
                 CancellationTokenSource cts2 = new CancellationTokenSource();
 
@@ -777,14 +776,14 @@ namespace System.Threading.Tasks.Tests
         }
 
         // regression test
-        // Disposing a linkedCTS would previously throw if a source CTS had been 
+        // Disposing a linkedCTS would previously throw if a source CTS had been
         // disposed already.  (it is an error for a user to get in this situation, but we decided to allow it to work).
         [Fact]
         public static void ODEWhenDisposingLinkedCTS()
         {
             try
             {
-                // User passes a cancellation token (CT) to component A. 
+                // User passes a cancellation token (CT) to component A.
                 CancellationTokenSource userTokenSource = new CancellationTokenSource();
                 CancellationToken userToken = userTokenSource.Token;
 
@@ -799,7 +798,7 @@ namespace System.Threading.Tasks.Tests
                 userTokenSource.Cancel();
                 userTokenSource.Dispose();
 
-                // Component B correctly cancels the operation, returns to component A. 
+                // Component B correctly cancels the operation, returns to component A.
                 // ...
 
                 // Component A now disposes the linked CTS => ObjectDisposedException is thrown by cts.Dispose() because the user CTS was already disposed.
@@ -1041,7 +1040,7 @@ namespace System.Threading.Tasks.Tests
             TestingSynchronizationContext testContext = new TestingSynchronizationContext();
             SetSynchronizationContext(testContext);
 
-            // Main test body 
+            // Main test body
 
             // register a null delegate, but use the currently registered syncContext.
             // the testSyncContext will track that it was used when the delegate is invoked.
@@ -1077,7 +1076,7 @@ namespace System.Threading.Tasks.Tests
             TestingSynchronizationContext testContext = new TestingSynchronizationContext();
             SetSynchronizationContext(testContext);
 
-            // Main test body 
+            // Main test body
             AggregateException caughtException = null;
 
             // register a null delegate, but use the currently registered syncContext.
@@ -1124,7 +1123,7 @@ namespace System.Threading.Tasks.Tests
             TestingSynchronizationContext testContext = new TestingSynchronizationContext();
             SetSynchronizationContext(testContext);
 
-            // Main test body 
+            // Main test body
             ArgumentException caughtException = null;
 
             // register a null delegate, but use the currently registered syncContext.
@@ -1273,7 +1272,7 @@ namespace System.Threading.Tasks.Tests
         {
             public bool DidSendOccur = false;
 
-            override public void Send(SendOrPostCallback d, object state)
+            public override void Send(SendOrPostCallback d, object state)
             {
                 //Note: another idea was to install this syncContext on the executing thread.
                 //unfortunately, the ExecutionContext business gets in the way and reestablishes a default SyncContext.
@@ -1291,7 +1290,7 @@ namespace System.Threading.Tasks.Tests
         {
             public bool DidSendOccur = false;
 
-            override public void Send(SendOrPostCallback d, object state)
+            public override void Send(SendOrPostCallback d, object state)
             {
                 Exception marshalledException = null;
                 Task t = new Task(
@@ -1370,7 +1369,7 @@ namespace System.Threading.Tasks.Tests
             public bool DisposeFalseCalled = false;
         }
 
-        public static void SetSynchronizationContext(SynchronizationContext sc)
+        private static void SetSynchronizationContext(SynchronizationContext sc)
         {
             SynchronizationContext.SetSynchronizationContext(sc);
         }

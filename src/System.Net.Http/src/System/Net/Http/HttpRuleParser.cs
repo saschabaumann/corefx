@@ -12,7 +12,7 @@ namespace System.Net.Http
     internal static class HttpRuleParser
     {
         private static readonly bool[] s_tokenChars = CreateTokenChars();
-        private const int maxNestedCount = 5;
+        private const int MaxNestedCount = 5;
 
         internal const char CR = (char)13;
         internal const char LF = (char)10;
@@ -75,7 +75,6 @@ namespace System.Net.Http
         internal static int GetTokenLength(string input, int startIndex)
         {
             Debug.Assert(input != null);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             if (startIndex >= input.Length)
             {
@@ -133,7 +132,6 @@ namespace System.Net.Http
         internal static int GetWhitespaceLength(string input, int startIndex)
         {
             Debug.Assert(input != null);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             if (startIndex >= input.Length)
             {
@@ -181,7 +179,7 @@ namespace System.Net.Http
 
         internal static bool ContainsInvalidNewLine(string value, int startIndex)
         {
-            // Search for newlines followed by non-whitespace: This is not allowed in any header (be it a known or 
+            // Search for newlines followed by non-whitespace: This is not allowed in any header (be it a known or
             // custom header). E.g. "value\r\nbadformat: header" is invalid. However "value\r\n goodformat: header"
             // is valid: newlines followed by whitespace are allowed in header values.
             int current = startIndex;
@@ -216,7 +214,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             int current = startIndex;
             char c;
@@ -261,7 +258,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert(startIndex >= 0);
-            Contract.Ensures((Contract.Result<int>() >= 0) && (Contract.Result<int>() <= (input.Length - startIndex)));
 
             host = null;
             if (startIndex >= input.Length)
@@ -269,8 +265,8 @@ namespace System.Net.Http
                 return 0;
             }
 
-            // A 'host' is either a token (if 'allowToken' == true) or a valid host name as defined by the URI RFC. 
-            // So we first iterate through the string and search for path delimiters and whitespace. When found, stop 
+            // A 'host' is either a token (if 'allowToken' == true) or a valid host name as defined by the URI RFC.
+            // So we first iterate through the string and search for path delimiters and whitespace. When found, stop
             // and try to use the substring as token or URI host name. If it works, we have a host name, otherwise not.
             int current = startIndex;
             bool isToken = true;
@@ -279,7 +275,7 @@ namespace System.Net.Http
                 char c = input[current];
                 if (c == '/')
                 {
-                    return 0; // Host header must not contain paths. 
+                    return 0; // Host header must not contain paths.
                 }
 
                 if ((c == ' ') || (c == '\t') || (c == '\r') || (c == ','))
@@ -310,14 +306,12 @@ namespace System.Net.Http
 
         internal static HttpParseResult GetCommentLength(string input, int startIndex, out int length)
         {
-            int nestedCount = 0;
-            return GetExpressionLength(input, startIndex, '(', ')', true, ref nestedCount, out length);
+            return GetExpressionLength(input, startIndex, '(', ')', true, 1, out length);
         }
 
         internal static HttpParseResult GetQuotedStringLength(string input, int startIndex, out int length)
         {
-            int nestedCount = 0;
-            return GetExpressionLength(input, startIndex, '"', '"', false, ref nestedCount, out length);
+            return GetExpressionLength(input, startIndex, '"', '"', false, 1, out length);
         }
 
         // quoted-pair = "\" CHAR
@@ -326,8 +320,6 @@ namespace System.Net.Http
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.ValueAtReturn(out length) >= 0) &&
-                (Contract.ValueAtReturn(out length) <= (input.Length - startIndex)));
 
             length = 0;
 
@@ -360,12 +352,10 @@ namespace System.Net.Http
         // comments, resulting in a stack overflow exception. In addition having more than 1 nested comment (if any)
         // is unusual.
         private static HttpParseResult GetExpressionLength(string input, int startIndex, char openChar,
-            char closeChar, bool supportsNesting, ref int nestedCount, out int length)
+            char closeChar, bool supportsNesting, int nestedCount, out int length)
         {
             Debug.Assert(input != null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
-            Contract.Ensures((Contract.Result<HttpParseResult>() != HttpParseResult.Parsed) ||
-                (Contract.ValueAtReturn<int>(out length) > 0));
 
             length = 0;
 
@@ -384,7 +374,7 @@ namespace System.Net.Http
                     (GetQuotedPairLength(input, current, out quotedPairLength) == HttpParseResult.Parsed))
                 {
                     // We ignore invalid quoted-pairs. Invalid quoted-pairs may mean that it looked like a quoted pair,
-                    // but we actually have a quoted-string: e.g. "\ü" ('\' followed by a char >127 - quoted-pair only
+                    // but we actually have a quoted-string: e.g. "\\u00FC" ('\' followed by a char >127 - quoted-pair only
                     // allows ASCII chars after '\'; qdtext allows both '\' and >127 chars).
                     current = current + quotedPairLength;
                     continue;
@@ -393,44 +383,39 @@ namespace System.Net.Http
                 // If we support nested expressions and we find an open-char, then parse the nested expressions.
                 if (supportsNesting && (input[current] == openChar))
                 {
-                    nestedCount++;
-                    try
+                    // Check if we exceeded the number of nested calls.
+                    if (nestedCount > MaxNestedCount)
                     {
-                        // Check if we exceeded the number of nested calls.
-                        if (nestedCount > maxNestedCount)
-                        {
+                        return HttpParseResult.InvalidFormat;
+                    }
+
+                    int nestedLength = 0;
+                    HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
+                        supportsNesting, nestedCount + 1, out nestedLength);
+
+                    switch (nestedResult)
+                    {
+                        case HttpParseResult.Parsed:
+                            current += nestedLength; // Add the length of the nested expression and continue.
+                            break;
+
+                        case HttpParseResult.NotParsed:
+                            Debug.Fail("'NotParsed' is unexpected: We started nested expression " +
+                                "parsing, because we found the open-char. So either it's a valid nested " +
+                                "expression or it has invalid format.");
+                            break;
+
+                        case HttpParseResult.InvalidFormat:
+                            // If the nested expression is invalid, we can't continue, so we fail with invalid format.
                             return HttpParseResult.InvalidFormat;
-                        }
 
-                        int nestedLength = 0;
-                        HttpParseResult nestedResult = GetExpressionLength(input, current, openChar, closeChar,
-                            supportsNesting, ref nestedCount, out nestedLength);
-
-                        switch (nestedResult)
-                        {
-                            case HttpParseResult.Parsed:
-                                current += nestedLength; // Add the length of the nested expression and continue.
-                                break;
-
-                            case HttpParseResult.NotParsed:
-                                Debug.Assert(false, "'NotParsed' is unexpected: We started nested expression " +
-                                    "parsing, because we found the open-char. So either it's a valid nested " +
-                                    "expression or it has invalid format.");
-                                break;
-
-                            case HttpParseResult.InvalidFormat:
-                                // If the nested expression is invalid, we can't continue, so we fail with invalid format.
-                                return HttpParseResult.InvalidFormat;
-
-                            default:
-                                Debug.Assert(false, "Unknown enum result: " + nestedResult);
-                                break;
-                        }
+                        default:
+                            Debug.Fail("Unknown enum result: " + nestedResult);
+                            break;
                     }
-                    finally
-                    {
-                        nestedCount--;
-                    }
+
+                    // after nested call we continue with parsing
+                    continue;
                 }
 
                 if (input[current] == closeChar)

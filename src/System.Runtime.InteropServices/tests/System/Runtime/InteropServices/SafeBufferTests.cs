@@ -25,16 +25,6 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)]
-        public void Initialize_NumBytesTimesSizeOfEachElement_NetFramework_ThrowsOverflowException()
-        {
-            var buffer = new SubBuffer(true);
-            Assert.Throws<OverflowException>(() => buffer.Initialize(uint.MaxValue, uint.MaxValue));
-            Assert.Throws<OverflowException>(() => buffer.Initialize<int>(uint.MaxValue));
-        }
-
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void Initialize_NumBytesTimesSizeOfEachElement_ThrowsArgumentOutOfRangeExceptionIfNot64Bit()
         {
             var buffer = new SubBuffer(true);
@@ -75,8 +65,8 @@ namespace System.Runtime.InteropServices.Tests
             var buffer = new SubBuffer(true);
             buffer.Initialize(4);
 
-            Assert.Throws<ArgumentException>(null, () => buffer.Read<int>(4));
-            Assert.Throws<ArgumentException>(null, () => buffer.Write<int>(4, 2));
+            Assert.Throws<ArgumentException>(null, () => buffer.Read<int>(byteOffset));
+            Assert.Throws<ArgumentException>(null, () => buffer.Write<int>(byteOffset, 2));
         }
 
         [Fact]

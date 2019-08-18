@@ -71,7 +71,7 @@ namespace System.Collections.Generic
 
             int index = _index;
             T[] current = _current;
-            
+
             // Must be >= and not == to enable range check elimination
             if ((uint)index >= (uint)current.Length)
             {
@@ -82,10 +82,10 @@ namespace System.Collections.Generic
                 current[index] = item;
                 _index = index + 1;
             }
-            
+
             _count++;
         }
-        
+
         // Non-inline to improve code quality as uncommon path
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void AddWithBufferAllocation(T item)
@@ -117,7 +117,7 @@ namespace System.Collections.Generic
                 while (enumerator.MoveNext())
                 {
                     T item = enumerator.Current;
-                    
+
                     if ((uint)index >= (uint)destination.Length)
                     {
                         AddWithBufferAllocation(item, ref destination, ref index);
@@ -126,7 +126,7 @@ namespace System.Collections.Generic
                     {
                         destination[index] = item;
                     }
-                    
+
                     index++;
                 }
 
@@ -152,7 +152,7 @@ namespace System.Collections.Generic
         /// Copies the contents of this builder to the specified array.
         /// </summary>
         /// <param name="array">The destination array.</param>
-        /// <param name="arrayIndex">The index in <see cref="array"/> to start copying to.</param>
+        /// <param name="arrayIndex">The index in <paramref name="array"/> to start copying to.</param>
         /// <param name="count">The number of items to copy.</param>
         public void CopyTo(T[] array, int arrayIndex, int count)
         {
@@ -180,7 +180,7 @@ namespace System.Collections.Generic
         /// </summary>
         /// <param name="position">The position in this builder to start copying from.</param>
         /// <param name="array">The destination array.</param>
-        /// <param name="arrayIndex">The index in <see cref="array"/> to start copying to.</param>
+        /// <param name="arrayIndex">The index in <paramref name="array"/> to start copying to.</param>
         /// <param name="count">The number of items to copy.</param>
         /// <returns>The position in this builder that was copied up to.</returns>
         public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
@@ -195,7 +195,7 @@ namespace System.Collections.Generic
 
             /*
              * Visual representation:
-             * 
+             *
              *       C0   C1   C2 ..  C31 ..   C63
              * R0:  [0]  [1]  [2] .. [31]
              * R1: [32] [33] [34] .. [63]

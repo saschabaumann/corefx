@@ -12,7 +12,7 @@ namespace System.Net.Http
     internal sealed class HttpConnectionResponseContent : HttpContent
     {
         private Stream _stream;
-        private bool _consumedStream;
+        private bool _consumedStream; // separate from _stream so that Dispose can drain _stream
 
         public void SetStream(Stream stream)
         {
@@ -59,6 +59,8 @@ namespace System.Net.Http
 
         internal sealed override Stream TryCreateContentReadStream() =>
             ConsumeStream();
+
+        internal override bool AllowDuplex => false;
 
         protected sealed override void Dispose(bool disposing)
         {

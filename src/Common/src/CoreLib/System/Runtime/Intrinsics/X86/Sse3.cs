@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
 namespace System.Runtime.Intrinsics.X86
@@ -10,12 +11,13 @@ namespace System.Runtime.Intrinsics.X86
     /// <summary>
     /// This class provides access to Intel SSE3 hardware instructions via intrinsics
     /// </summary>
+    [Intrinsic]
     [CLSCompliant(false)]
     public abstract class Sse3 : Sse2
     {
         internal Sse3() { }
 
-        public new static bool IsSupported { get => IsSupported; }
+        public static new bool IsSupported { get => IsSupported; }
 
         /// <summary>
         /// __m128 _mm_addsub_ps (__m128 a, __m128 b)

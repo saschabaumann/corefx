@@ -36,9 +36,9 @@ namespace System.Security.AccessControl
     {
         [ThreadStatic]
         private static TlsContents t_tlsSlotData;
-        private static Dictionary<Luid, string> privileges = new Dictionary<Luid, string>();
-        private static Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
-        private static ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
+        private static readonly Dictionary<Luid, string> privileges = new Dictionary<Luid, string>();
+        private static readonly Dictionary<string, Luid> luids = new Dictionary<string, Luid>();
+        private static readonly ReaderWriterLockSlim privilegeLock = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
 
         private bool needToRevert = false;
         private bool initialState = false;
@@ -129,7 +129,7 @@ namespace System.Security.AccessControl
                         }
                         else
                         {
-                            System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "LookupPrivilegeValue() failed with unrecognized error code {0}", error));
+                            System.Diagnostics.Debug.Fail($"LookupPrivilegeValue() failed with unrecognized error code {error}");
                             throw new InvalidOperationException();
                         }
                     }
@@ -164,7 +164,7 @@ namespace System.Security.AccessControl
             private bool disposed = false;
             private int referenceCount = 1;
             private SafeTokenHandle threadHandle = new SafeTokenHandle(IntPtr.Zero);
-            private bool isImpersonating = false;
+            private readonly bool isImpersonating = false;
 
             private static volatile SafeTokenHandle processHandle = new SafeTokenHandle(IntPtr.Zero);
             private static readonly object syncRoot = new object();
@@ -292,7 +292,7 @@ namespace System.Security.AccessControl
                 }
                 else if (error != 0)
                 {
-                    System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {0}", error));
+                    System.Diagnostics.Debug.Fail($"WindowsIdentity.GetCurrentThreadToken() failed with unrecognized error code {error}");
                     throw new InvalidOperationException();
                 }
             }
@@ -542,7 +542,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Fail($"AdjustTokenPrivileges() failed with unrecognized error code {error}");
                 throw new InvalidOperationException();
             }
         }
@@ -625,7 +625,7 @@ namespace System.Security.AccessControl
             }
             else if (error != 0)
             {
-                System.Diagnostics.Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "AdjustTokenPrivileges() failed with unrecognized error code {0}", error));
+                System.Diagnostics.Debug.Fail($"AdjustTokenPrivileges() failed with unrecognized error code {error}");
                 throw new InvalidOperationException();
             }
         }
@@ -636,10 +636,10 @@ namespace System.Security.AccessControl
             {
                 throw new ArgumentNullException( "helper" );
             }
-            
+
             Privilege p = new Privilege( privilege );
 
-            try 
+            try
             {
                 if (enabled)
                 {

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -37,11 +36,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (capacity < 0) throw new ArgumentOutOfRangeException(nameof(capacity));
 
-            Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)0));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
-            Contract.EndContractBlock();
-
             return new WindowsRuntimeBuffer(capacity);
         }
 
@@ -56,12 +50,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
-
-            Contract.Ensures(Contract.Result<IBuffer>() != null);
-            Contract.Ensures(Contract.Result<IBuffer>().Length == unchecked((uint)length));
-            Contract.Ensures(Contract.Result<IBuffer>().Capacity == unchecked((uint)capacity));
-
-            Contract.EndContractBlock();
 
             byte[] underlyingData = new byte[capacity];
             Buffer.BlockCopy(data, offset, underlyingData, 0, length);
@@ -111,10 +99,10 @@ namespace System.Runtime.InteropServices.WindowsRuntime
 
         #region Fields
 
-        private byte[] _data = null;
-        private int _dataStartOffs = 0;
+        private readonly byte[] _data = null;
+        private readonly int _dataStartOffs = 0;
         private int _usefulDataLength = 0;
-        private int _maxDataCapacity = 0;
+        private readonly int _maxDataCapacity = 0;
         private GCHandle _pinHandle;
 
         // Pointer to data[dataStartOffs] when data is pinned:
@@ -129,8 +117,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
         {
             if (capacity < 0)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
-
-            Contract.EndContractBlock();
 
             _data = new byte[capacity];
             _dataStartOffs = 0;
@@ -149,7 +135,6 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (data.Length - offset < length) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (data.Length - offset < capacity) throw new ArgumentException(SR.Argument_InsufficientArrayElementsAfterOffset);
             if (capacity < length) throw new ArgumentException(SR.Argument_InsufficientBufferCapacity);
-            Contract.EndContractBlock();
 
             _data = data;
             _dataStartOffs = offset;
@@ -265,7 +250,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             if (buffPtr != IntPtr.Zero)
                 return buffPtr;
 
-            // Ok, we we are not yet pinned. Let's do it.
+            // Ok, we are not yet pinned. Let's do it.
             return new IntPtr(PinUnderlyingData());
         }
 

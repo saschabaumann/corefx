@@ -19,9 +19,9 @@ namespace System.Globalization
                                    // be affected by the DateTime.MinValue;
         internal int maxEraYear;   // Max year value in this era. (== the year length of the era + 1)
 
-        internal string eraName;    // The era name
-        internal string abbrevEraName;  // Abbreviated Era Name
-        internal string englishEraName; // English era name
+        internal string? eraName;    // The era name
+        internal string? abbrevEraName;  // Abbreviated Era Name
+        internal string? englishEraName; // English era name
 
         internal EraInfo(int era, int startYear, int startMonth, int startDay, int yearOffset, int minEraYear, int maxEraYear)
         {
@@ -88,13 +88,7 @@ namespace System.Globalization
         // This is the max Gregorian year can be represented by DateTime class.  The limitation
         // is derived from DateTime class.
         //
-        internal int MaxYear
-        {
-            get
-            {
-                return (m_maxYear);
-            }
-        }
+        internal int MaxYear => m_maxYear;
 
         internal static readonly int[] DaysToMonth365 =
         {
@@ -111,7 +105,7 @@ namespace System.Globalization
         internal Calendar m_Cal;
 
         internal EraInfo[] m_EraInfo;
-        internal int[] m_eras = null;
+        internal int[]? m_eras = null;
 
 
         // Construct an instance of gregorian calendar.
@@ -153,7 +147,7 @@ namespace System.Globalization
                         {
                             return m_EraInfo[i].yearOffset;
                         }
-                        else if (!AppContextSwitches.EnforceJapaneseEraYearRanges)
+                        else if (!LocalAppContextSwitches.EnforceJapaneseEraYearRanges)
                         {
                             // If we got the year number exceeding the era max year number, this still possible be valid as the date can be created before
                             // introducing new eras after the era we are checking. we'll loop on the eras after the era we have and ensure the year
@@ -182,8 +176,7 @@ namespace System.Globalization
                     {
                         throw new ArgumentOutOfRangeException(
                                     nameof(year),
-                                    string.Format(
-                                        CultureInfo.CurrentCulture,
+                                    SR.Format(
                                         SR.ArgumentOutOfRange_Range,
                                         m_EraInfo[i].minEraYear,
                                         m_EraInfo[i].maxEraYear));
@@ -324,8 +317,7 @@ namespace System.Globalization
                 {
                     throw new ArgumentOutOfRangeException(
                                 nameof(millisecond),
-                                string.Format(
-                                    CultureInfo.CurrentCulture,
+                                SR.Format(
                                     SR.ArgumentOutOfRange_Range,
                                     0,
                                     MillisPerSecond - 1));
@@ -342,7 +334,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             "time",
-                            string.Format(
+                            SR.Format(
                                 CultureInfo.InvariantCulture,
                                 SR.ArgumentOutOfRange_CalendarRange,
                                 m_Cal.MinSupportedDateTime,
@@ -373,8 +365,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(months),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
+                            SR.Format(
                                 SR.ArgumentOutOfRange_Range,
                                 -120000,
                                 120000));
@@ -388,12 +379,12 @@ namespace System.Globalization
             if (i >= 0)
             {
                 m = i % 12 + 1;
-                y = y + i / 12;
+                y += i / 12;
             }
             else
             {
                 m = 12 + (i + 1) % 12;
-                y = y + (i - 11) / 12;
+                y += (i - 11) / 12;
             }
             int[] daysArray = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
             int days = (daysArray[m] - daysArray[m - 1]);
@@ -519,8 +510,8 @@ namespace System.Globalization
         // Returns the number of months in the specified year and era.
         public int GetMonthsInYear(int year, int era)
         {
-            year = GetGregorianYear(year, era);
-            return (12);
+            GetGregorianYear(year, era);
+            return 12;
         }
 
         // Returns the year part of the specified DateTime. The returned value is an
@@ -571,8 +562,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(day),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
+                            SR.Format(
                                 SR.ArgumentOutOfRange_Range,
                                 1,
                                 GetDaysInMonth(year, month, era)));
@@ -596,8 +586,8 @@ namespace System.Globalization
         //
         public int GetLeapMonth(int year, int era)
         {
-            year = GetGregorianYear(year, era);
-            return (0);
+            GetGregorianYear(year, era);
+            return 0;
         }
 
         // Checks whether a given month in the specified era is a leap month. This method returns true if
@@ -610,8 +600,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(month),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
+                            SR.Format(
                                 SR.ArgumentOutOfRange_Range,
                                 1,
                                 12));
@@ -665,9 +654,7 @@ namespace System.Globalization
             {
                 throw new ArgumentOutOfRangeException(
                             nameof(year),
-                            string.Format(
-                                CultureInfo.CurrentCulture,
-                                SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
+                            SR.Format(SR.ArgumentOutOfRange_Range, m_minYear, m_maxYear));
             }
             // If the year value is above 100, just return the year value.  Don't have to do
             // the TwoDigitYearMax comparison.
@@ -675,4 +662,3 @@ namespace System.Globalization
         }
     }
 }
-

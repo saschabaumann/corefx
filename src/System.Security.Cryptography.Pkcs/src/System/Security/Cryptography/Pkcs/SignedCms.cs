@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Pkcs
     {
         private SignedDataAsn _signedData;
         private bool _hasData;
-        private SubjectIdentifierType _signerIdentifierType;
+        private readonly SubjectIdentifierType _signerIdentifierType;
 
         // A defensive copy of the relevant portions of the data to Decode
         private Memory<byte> _heldData;
@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.Pkcs
         }
 
         internal void Decode(ReadOnlyMemory<byte> encodedMessage)
-        { 
+        {
             // Windows (and thus NetFx) reads the leading data and ignores extra.
             // So use the Decode overload which doesn't throw on extra data.
             ContentInfoAsn.Decode(
@@ -238,12 +238,12 @@ namespace System.Security.Cryptography.Pkcs
             {
                 AsnReader reader = new AsnReader(wrappedContent, AsnEncodingRules.BER);
 
-                if (reader.TryGetPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
+                if (reader.TryReadPrimitiveOctetStringBytes(out ReadOnlyMemory<byte> inner))
                 {
                     return inner;
                 }
 
-                rented = ArrayPool<byte>.Shared.Rent(wrappedContent.Length);
+                rented = CryptoPool.Rent(wrappedContent.Length);
 
                 if (!reader.TryCopyOctetStringBytes(rented, out bytesWritten))
                 {
@@ -260,8 +260,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 if (rented != null)
                 {
-                    rented.AsSpan(0, bytesWritten).Clear();
-                    ArrayPool<byte>.Shared.Return(rented);
+                    CryptoPool.Return(rented, bytesWritten);
                 }
             }
 
@@ -288,7 +287,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_Empty_Content);
             }
-            
+
             if (_hasData && signer.SignerIdentifierType == SubjectIdentifierType.NoSignature)
             {
                 // Even if all signers have been removed, throw if doing a NoSignature signature

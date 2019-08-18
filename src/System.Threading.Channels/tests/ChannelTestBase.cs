@@ -11,7 +11,7 @@ using Xunit;
 
 namespace System.Threading.Channels.Tests
 {
-    public abstract class ChannelTestBase : TestBase
+    public abstract partial class ChannelTestBase : TestBase
     {
         protected Channel<int> CreateChannel() => CreateChannel<int>();
         protected abstract Channel<T> CreateChannel<T>();
@@ -24,7 +24,6 @@ namespace System.Threading.Channels.Tests
         protected virtual bool RequiresSingleWriter => false;
         protected virtual bool BuffersItems => true;
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Requires internal reflection on framework types.")]
         [Fact]
         public void ValidateDebuggerAttributes()
         {
@@ -445,10 +444,8 @@ namespace System.Threading.Channels.Tests
             await Assert.ThrowsAsync<FormatException>(async () => await write);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(1)]
-        public void ManyWriteAsync_ThenManyTryRead_Success(int readMode)
+        [Fact]
+        public void ManyWriteAsync_ThenManyTryRead_Success()
         {
             if (RequiresSingleReader || RequiresSingleWriter)
             {

@@ -8,7 +8,7 @@
 **
 ** Purpose: Exception to an invalid dll or executable format.
 **
-** 
+**
 ===========================================================*/
 
 using System.Globalization;
@@ -21,8 +21,8 @@ namespace System
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public partial class BadImageFormatException : SystemException
     {
-        private string _fileName;  // The name of the corrupt PE file.
-        private string _fusionLog = null;  // fusion log (when applicable)
+        private readonly string? _fileName;  // The name of the corrupt PE file.
+        private readonly string? _fusionLog;  // fusion log (when applicable)
 
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
@@ -30,25 +30,25 @@ namespace System
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(string message)
+        public BadImageFormatException(string? message)
             : base(message)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(string message, Exception inner)
+        public BadImageFormatException(string? message, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
-        public BadImageFormatException(string message, string fileName) : base(message)
+        public BadImageFormatException(string? message, string? fileName) : base(message)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
-        public BadImageFormatException(string message, string fileName, Exception inner)
+        public BadImageFormatException(string? message, string? fileName, Exception? inner)
             : base(message, inner)
         {
             HResult = HResults.COR_E_BADIMAGEFORMAT;
@@ -74,7 +74,7 @@ namespace System
             get
             {
                 SetMessageField();
-                return _message;
+                return _message!;
             }
         }
 
@@ -91,10 +91,7 @@ namespace System
             }
         }
 
-        public string FileName
-        {
-            get { return _fileName; }
-        }
+        public string? FileName => _fileName;
 
         public override string ToString()
         {
@@ -104,7 +101,7 @@ namespace System
                 s += Environment.NewLine + SR.Format(SR.IO_FileName_Name, _fileName);
 
             if (InnerException != null)
-                s = s + " ---> " + InnerException.ToString();
+                s = s + InnerExceptionPrefix + InnerException.ToString();
 
             if (StackTrace != null)
                 s += Environment.NewLine + StackTrace;
@@ -121,9 +118,6 @@ namespace System
             return s;
         }
 
-        public string FusionLog
-        {
-            get { return _fusionLog; }
-        }
+        public string? FusionLog => _fusionLog;
     }
 }

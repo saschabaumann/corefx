@@ -4,31 +4,27 @@
 
 /*============================================================
 **
-** 
-** 
 **
-**  
+**
+**
+**
 **
 ** Purpose: Represents a Label to the ILGenerator class.
 **
-** 
+**
 ===========================================================*/
-
-using System;
-using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace System.Reflection.Emit
 {
-    // The Label class is an opaque representation of a label used by the 
+    // The Label class is an opaque representation of a label used by the
     // ILGenerator class.  The token is used to mark where labels occur in the IL
-    // stream and then the necessary offsets are put back in the code when the ILGenerator 
+    // stream and then the necessary offsets are put back in the code when the ILGenerator
     // is passed to the MethodWriter.
     // Labels are created by using ILGenerator.CreateLabel and their position is set
     // by using ILGenerator.MarkLabel.
-    public struct Label
+    public readonly struct Label : IEquatable<Label>
     {
-        internal int m_label;
+        internal readonly int m_label;
 
         //public Label() {
         //    m_label=0;
@@ -49,7 +45,7 @@ namespace System.Reflection.Emit
             return m_label;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (obj is Label)
                 return Equals((Label)obj);

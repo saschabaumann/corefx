@@ -34,14 +34,9 @@ namespace System.ServiceModel.Syndication
 
         public abstract void WriteTo(XmlWriter writer);
 
-        internal protected virtual void SetItem(SyndicationItem item)
+        protected internal virtual void SetItem(SyndicationItem item)
         {
             _item = item ?? throw new ArgumentNullException(nameof(item));
-        }
-
-        internal static void CreateBufferIfRequiredAndWriteNode(ref XmlBuffer buffer, ref XmlDictionaryWriter extWriter, XmlDictionaryReader reader, int maxExtensionSize)
-        {
-            SyndicationFeedFormatter.CreateBufferIfRequiredAndWriteNode(ref buffer, ref extWriter, reader, maxExtensionSize);
         }
 
         internal static SyndicationItem CreateItemInstance(Type itemType)

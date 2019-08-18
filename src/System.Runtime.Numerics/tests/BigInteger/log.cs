@@ -87,7 +87,7 @@ namespace System.Numerics.Tests
                 VerifyLogString(Print(tempByteArray2) + Print(tempByteArray1) + "bLog");
             }
 
-            // Log Method - Small BigInteger and 0<base<0.5 
+            // Log Method - Small BigInteger and 0<base<0.5
             for (int i = 0; i < s_samples; i++)
             {
                 BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, 10));
@@ -95,7 +95,7 @@ namespace System.Numerics.Tests
                 Assert.True(ApproxEqual(BigInteger.Log(temp, newbase), Math.Log((double)temp, newbase)));
             }
 
-            // Log Method - Large BigInteger and 0<base<0.5 
+            // Log Method - Large BigInteger and 0<base<0.5
             for (int i = 0; i < s_samples; i++)
             {
                 BigInteger temp = new BigInteger(GetRandomPosByteArray(s_random, s_random.Next(1, 100)));
@@ -134,7 +134,6 @@ namespace System.Numerics.Tests
 
         [Fact]
         [OuterLoop]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public static void RunLargeValueLogTests()
         {
             LargeValueLogTests(0, 4, 64, 3);
@@ -143,9 +142,9 @@ namespace System.Numerics.Tests
         /// <summary>
         /// Test Log Method on Very Large BigInteger more than (1 &lt;&lt; Int.MaxValue) by base 2
         /// Tested BigInteger are: pow(2, startShift + smallLoopShift * [1..smallLoopLimit] + Int32.MaxValue * [1..bigLoopLimit])
-        /// Note: 
+        /// Note:
         /// ToString() can not operate such large values
-        /// VerifyLogString() can not operate such large values, 
+        /// VerifyLogString() can not operate such large values,
         /// Math.Log() can not operate such large values
         /// </summary>
         private static void LargeValueLogTests(int startShift, int bigShiftLoopLimit, int smallShift = 0, int smallShiftLoopLimit = 1)
@@ -166,7 +165,7 @@ namespace System.Numerics.Tests
                         (int.MaxValue / 10) * (double)(j + 1);
                     Assert.True(ApproxEqual(BigInteger.Log(temp, logbase), expected));
                 }
-                
+
             }
         }
 

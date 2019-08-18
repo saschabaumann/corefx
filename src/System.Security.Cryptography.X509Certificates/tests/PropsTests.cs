@@ -324,7 +324,7 @@ Wry5FNNo
 
                 Assert.Throws<PlatformNotSupportedException>(() => c.FriendlyName = "This is a friendly name.");
                 Assert.Equal(string.Empty, c.FriendlyName);
-                
+
                 Assert.Throws<PlatformNotSupportedException>(() => c.FriendlyName = null);
                 Assert.Equal(string.Empty, c.FriendlyName);
 
@@ -415,56 +415,48 @@ Wry5FNNo
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_UpnName_Cert()
         {
             TestComplexGetNameInfo("subjectupn1@example.org", X509NameType.UpnName, false);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_UpnName_Issuer()
         {
             TestComplexGetNameInfo("issuerupn1@example.org", X509NameType.UpnName, true);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_DnsName_Cert()
         {
             TestComplexGetNameInfo("dns1.subject.example.org", X509NameType.DnsName, false);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_DnsName_Issuer()
         {
             TestComplexGetNameInfo("dns1.issuer.example.org", X509NameType.DnsName, true);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_DnsFromAlternativeName_Cert()
         {
             TestComplexGetNameInfo("dns1.subject.example.org", X509NameType.DnsFromAlternativeName, false);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_DnsFromAlternativeName_Issuer()
         {
             TestComplexGetNameInfo("dns1.issuer.example.org", X509NameType.DnsFromAlternativeName, true);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_UrlName_Cert()
         {
             TestComplexGetNameInfo("http://uri1.subject.example.org/", X509NameType.UrlName, false);
         }
 
         [Fact]
-        [ActiveIssue(30561, TargetFrameworkMonikers.NetFramework)]
         public static void ComplexGetNameInfo_UrlName_Issuer()
         {
             TestComplexGetNameInfo("http://uri1.issuer.example.org/", X509NameType.UrlName, true);

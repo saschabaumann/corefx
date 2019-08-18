@@ -7,7 +7,7 @@
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
-
+using System.Threading;
 
 namespace System.Data.SqlClient
 {
@@ -192,7 +192,7 @@ namespace System.Data.SqlClient
         private readonly string _attachDBFileName;
         private readonly string _currentLanguage;
         private readonly string _dataSource;
-        private readonly string _localDBInstance; // created based on datasource, set to NULL if datasource is not LocalDB 
+        private readonly string _localDBInstance; // created based on datasource, set to NULL if datasource is not LocalDB
         private readonly string _failoverPartner;
         private readonly string _initialCatalog;
         private readonly string _password;
@@ -560,7 +560,7 @@ namespace System.Data.SqlClient
                     { SYNONYM.WSID, KEY.Workstation_Id }
                 };
                 Debug.Assert(synonyms.Count == count, "incorrect initial ParseSynonyms size");
-                s_sqlClientSynonyms = synonyms;
+                Interlocked.CompareExchange(ref s_sqlClientSynonyms, synonyms, null);
             }
             return synonyms;
         }

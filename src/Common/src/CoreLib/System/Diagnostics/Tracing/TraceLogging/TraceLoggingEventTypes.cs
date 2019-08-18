@@ -26,7 +26,7 @@ namespace System.Diagnostics.Tracing
     {
         internal readonly TraceLoggingTypeInfo[] typeInfos;
 #if FEATURE_PERFTRACING
-        internal readonly string[] paramNames;
+        internal readonly string[]? paramNames;
 #endif
         internal readonly string name;
         internal readonly EventTags tags;
@@ -60,7 +60,6 @@ namespace System.Diagnostics.Tracing
             params Type[] types)
             : this(tags, name, MakeArray(types))
         {
-            return;
         }
 
         /// <summary>
@@ -87,7 +86,6 @@ namespace System.Diagnostics.Tracing
             params TraceLoggingTypeInfo[] typeInfos)
             : this(tags, name, MakeArray(typeInfos))
         {
-            return;
         }
 
         internal TraceLoggingEventTypes(
@@ -111,12 +109,12 @@ namespace System.Diagnostics.Tracing
             var collector = new TraceLoggingMetadataCollector();
             for (int i = 0; i < typeInfos.Length; ++i)
             {
-                var typeInfo = typeInfos[i];
+                TraceLoggingTypeInfo typeInfo = typeInfos[i];
                 this.level = Statics.Combine((int)typeInfo.Level, this.level);
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
                 this.keywords |= typeInfo.Keywords;
-                var paramName = paramInfos[i].Name;
-                if (Statics.ShouldOverrideFieldName(paramName))
+                string? paramName = paramInfos[i].Name;
+                if (Statics.ShouldOverrideFieldName(paramName!))
                 {
                     paramName = typeInfo.Name;
                 }
@@ -145,7 +143,7 @@ namespace System.Diagnostics.Tracing
             this.level = Statics.DefaultLevel;
 
             var collector = new TraceLoggingMetadataCollector();
-            foreach (var typeInfo in typeInfos)
+            foreach (TraceLoggingTypeInfo typeInfo in typeInfos)
             {
                 this.level = Statics.Combine((int)typeInfo.Level, this.level);
                 this.opcode = Statics.Combine((int)typeInfo.Opcode, this.opcode);
@@ -162,46 +160,31 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// Gets the default name that will be used for events with this descriptor.
         /// </summary>
-        internal string Name
-        {
-            get { return this.name; }
-        }
+        internal string Name => this.name;
 
         /// <summary>
         /// Gets the default level that will be used for events with this descriptor.
         /// </summary>
-        internal EventLevel Level
-        {
-            get { return (EventLevel)this.level; }
-        }
+        internal EventLevel Level => (EventLevel)this.level;
 
         /// <summary>
         /// Gets the default opcode that will be used for events with this descriptor.
         /// </summary>
-        internal EventOpcode Opcode
-        {
-            get { return (EventOpcode)this.opcode; }
-        }
+        internal EventOpcode Opcode => (EventOpcode)this.opcode;
 
         /// <summary>
         /// Gets the default set of keywords that will added to events with this descriptor.
         /// </summary>
-        internal EventKeywords Keywords
-        {
-            get { return (EventKeywords)this.keywords; }
-        }
+        internal EventKeywords Keywords => (EventKeywords)this.keywords;
 
         /// <summary>
         /// Gets the default tags that will be added events with this descriptor.
         /// </summary>
-        internal EventTags Tags
-        {
-            get { return this.tags; }
-        }
+        internal EventTags Tags => this.tags;
 
         internal NameInfo GetNameInfo(string name, EventTags tags)
         {
-            var ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
+            NameInfo? ret = this.nameInfos.TryGet(new KeyValuePair<string, EventTags>(name, tags));
             if (ret == null)
             {
                 ret = this.nameInfos.GetOrAdd(new NameInfo(name, tags, this.typeMetadata.Length));
@@ -262,7 +245,7 @@ namespace System.Diagnostics.Tracing
             string[] paramNames = new string[paramInfos.Length];
             for (int i = 0; i < paramNames.Length; i++)
             {
-                paramNames[i] = paramInfos[i].Name;
+                paramNames[i] = paramInfos[i].Name!;
             }
 
             return paramNames;

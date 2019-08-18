@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.ComponentModel.Design.Serialization.Tests
@@ -19,16 +20,16 @@ namespace System.ComponentModel.Design.Serialization.Tests
         }
 
         [Fact]
-        public void Ctor_NullSerializerType_ThrowsNullReferenceException()
+        public void Ctor_NullSerializerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute((Type)null, typeof(int)));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>(() => new DesignerSerializerAttribute((Type)null, typeof(int)));
         }
 
         [Fact]
-        public void Ctor_NullBaseSerializerType_ThrowsNullReferenceException()
+        public void Ctor_NullBaseSerializerType_ThrowsArgumentNullException()
         {
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute(typeof(int), (Type)null));
-            Assert.Throws<NullReferenceException>(() => new DesignerSerializerAttribute("int", (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new DesignerSerializerAttribute(typeof(int), (Type)null));
+            AssertExtensions.Throws<ArgumentNullException, NullReferenceException>("baseSerializerType", () => new DesignerSerializerAttribute("int", (Type)null));
         }
 
         [Theory]
@@ -51,21 +52,21 @@ namespace System.ComponentModel.Design.Serialization.Tests
             Assert.Equal(baseSerializerTypeName, attribute.SerializerBaseTypeName);
         }
 
+        public static IEnumerable<object[]> TypeId_TestData()
+        {
+            yield return new object[] { "BaseSerializerTypeName", "System.ComponentModel.Design.Serialization.DesignerSerializerAttributeBaseSerializerTypeName" };
+            yield return new object[] { "BaseSerializerTypeName,Other", "System.ComponentModel.Design.Serialization.DesignerSerializerAttributeBaseSerializerTypeName" };
+            yield return new object[] { string.Empty, "System.ComponentModel.Design.Serialization.DesignerSerializerAttribute" };
+            yield return new object[] { null, "System.ComponentModel.Design.Serialization.DesignerSerializerAttribute" };
+        }
+
         [Theory]
-        [InlineData("BaseSerializerTypeName", "System.ComponentModel.Design.Serialization.DesignerSerializerAttributeBaseSerializerTypeName")]
-        [InlineData("BaseSerializerTypeName,Other", "System.ComponentModel.Design.Serialization.DesignerSerializerAttributeBaseSerializerTypeName")]
-        public void TypeId_ValidSerializerBaseTypeName_ReturnsExcepted(string serializerBaseTypeName, object expected)
+        [MemberData(nameof(TypeId_TestData))]
+        public void TypeId_Get_ReturnsExcepted(string serializerBaseTypeName, object expected)
         {
             var attribute = new DesignerSerializerAttribute("SerializerType", serializerBaseTypeName);
             Assert.Equal(expected, attribute.TypeId);
             Assert.Same(attribute.TypeId, attribute.TypeId);
-        }
-
-        [Fact]
-        public void TypeId_NullBaseSerializerTypeName_ThrowsNullReferenceException()
-        {
-            var attribute = new DesignerSerializerAttribute("SerializerType", (string)null);
-            Assert.Throws<NullReferenceException>(() => attribute.TypeId);
         }
     }
 }

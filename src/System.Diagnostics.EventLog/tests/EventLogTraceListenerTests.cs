@@ -1,4 +1,8 @@
-﻿using System;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -94,11 +98,11 @@ namespace System.Diagnostics.Tests
                 using (var listener = new EventLogTraceListener(source))
                 {
                     string message = "A little message for the log";
-                    listener.Write(message);
+                    Helpers.RetryOnWin7(() => listener.Write(message));
                     ValidateLastEntryMessage(listener, message, source);
 
                     message = "One more message for my friend";
-                    listener.WriteLine(message);
+                    Helpers.RetryOnWin7(() => listener.WriteLine(message));
                     ValidateLastEntryMessage(listener, message, source);
                 }
             }
@@ -109,6 +113,7 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [ActiveIssue(40224, TestPlatforms.Windows)]
         [ConditionalTheory(typeof(Helpers), nameof(Helpers.IsElevatedAndSupportsEventLogs))]
         [InlineData(TraceEventType.Information, EventLogEntryType.Information, ushort.MaxValue + 1, ushort.MaxValue)]
         [InlineData(TraceEventType.Error, EventLogEntryType.Error, ushort.MinValue - 1, ushort.MinValue)]

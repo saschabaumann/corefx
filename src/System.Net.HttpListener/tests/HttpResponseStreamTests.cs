@@ -450,14 +450,14 @@ namespace System.Net.Tests
                 {
                     Assert.Throws<HttpListenerException>(() => context.Response.OutputStream.Write(buffer, 0, buffer.Length));
                 }
-                
+
                 // Closing a response from a closed client if a writing has already failed should not fail.
                 context.Response.Close();
             }
         }
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.
@@ -497,7 +497,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(19534, TestPlatforms.OSX)]
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // [ActiveIssue(11057)]
         [InlineData(true)]
         [InlineData(false)]
         [ActiveIssue(18188, platforms: TestPlatforms.Windows)] // Indeterminate failure - socket not always fully disconnected.

@@ -66,7 +66,7 @@ namespace System.IO.Compression
         [InlineData(1000, true, false, 1, 1)]
         [InlineData(1000, false, false, 1001 * 24, 1)]
         [InlineData(1000, true, false, 1001 * 24, 1)]
-        public async void ManyConcatenatedGzipStreams(int streamCount, bool useAsync, bool useReadByte, int bufferSize, int bytesPerStream)
+        public async Task ManyConcatenatedGzipStreams(int streamCount, bool useAsync, bool useReadByte, int bufferSize, int bytesPerStream)
         {
             await TestConcatenatedGzipStreams(streamCount, useAsync, useReadByte, bufferSize, bytesPerStream);
         }
@@ -82,7 +82,7 @@ namespace System.IO.Compression
         [InlineData(1000, true, false, 1, 9000)]
         [InlineData(1000, false, false, 1001 * 24, 9000)]
         [InlineData(1000, true, false, 1001 * 24, 9000)]
-        public async void ManyManyConcatenatedGzipStreams(int streamCount, bool useAsync, bool useReadByte, int bufferSize, int bytesPerStream)
+        public async Task ManyManyConcatenatedGzipStreams(int streamCount, bool useAsync, bool useReadByte, int bufferSize, int bytesPerStream)
         {
             await TestConcatenatedGzipStreams(streamCount, useAsync, useReadByte, bufferSize, bytesPerStream);
         }
@@ -190,6 +190,52 @@ namespace System.IO.Compression
             {
                 compressor.WriteAsync(new ReadOnlyMemory<byte>(new byte[1])).AsTask().Wait();
                 Assert.True(compressor.WriteArrayInvoked);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task DisposeAsync_Flushes(bool derived, bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var gs = derived ?
+                new DerivedGZipStream(ms, CompressionMode.Compress, leaveOpen) :
+                new GZipStream(ms, CompressionMode.Compress, leaveOpen);
+            gs.WriteByte(1);
+            await gs.FlushAsync();
+
+            long pos = ms.Position;
+            gs.WriteByte(1);
+            Assert.Equal(pos, ms.Position);
+
+            await gs.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task DisposeAsync_MultipleCallsAllowed(bool derived, bool leaveOpen)
+        {
+            using (var gs = derived ?
+                new DerivedGZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen) :
+                new GZipStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
+            {
+                await gs.DisposeAsync();
+                await gs.DisposeAsync();
             }
         }
 

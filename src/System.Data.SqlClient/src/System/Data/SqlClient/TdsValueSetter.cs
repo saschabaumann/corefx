@@ -23,9 +23,9 @@ namespace System.Data.SqlClient
     {
         #region Private fields
 
-        private TdsParserStateObject _stateObj;      // target to write to
-        private SmiMetaData _metaData;      // metadata describing value
-        private bool _isPlp;         // should this column be sent in PLP format?
+        private readonly TdsParserStateObject _stateObj;      // target to write to
+        private readonly SmiMetaData _metaData;      // metadata describing value
+        private readonly bool _isPlp;         // should this column be sent in PLP format?
         private bool _plpUnknownSent;// did we send initial UNKNOWN_LENGTH marker?
         private Encoder _encoder;       // required for chunking character type data
         private SmiMetaData _variantType;   // required for sql_variant
@@ -99,16 +99,16 @@ namespace System.Data.SqlClient
                         break;
                     case SqlDbType.Udt:
                     case SqlDbType.Xml:
-                        Debug.Assert(false, "PLP-only types shouldn't get to this point. Type: " + _metaData.SqlDbType);
+                        Debug.Fail("PLP-only types shouldn't get to this point. Type: " + _metaData.SqlDbType);
                         break;
                     case SqlDbType.Variant:
                         _stateObj.Parser.WriteInt(TdsEnums.FIXEDNULL, _stateObj);
                         break;
                     case SqlDbType.Structured:
-                        Debug.Assert(false, "Not yet implemented.  Not needed until Structured UDTs");
+                        Debug.Fail("Not yet implemented.  Not needed until Structured UDTs");
                         break;
                     default:
-                        Debug.Assert(false, "Unexpected SqlDbType: " + _metaData.SqlDbType);
+                        Debug.Fail("Unexpected SqlDbType: " + _metaData.SqlDbType);
                         break;
                 }
             }
@@ -565,7 +565,7 @@ namespace System.Data.SqlClient
                     _stateObj.Parser.WriteInt(dt.time, _stateObj);
                 }
 
-                // Clean the variant metadata to prevent sharing it with next row. 
+                // Clean the variant metadata to prevent sharing it with next row.
                 // As a reminder, SetVariantType raises an assert if _variantType is not clean
                 _variantType = null;
             }
@@ -602,10 +602,13 @@ namespace System.Data.SqlClient
         // valid for UniqueIdentifier
         internal void SetGuid(Guid value)
         {
-            Debug.Assert(
-                SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetGuid));
-
+            Debug.Assert(SmiXetterAccessMap.IsSetterAccessValid(_metaData, SmiXetterTypeCode.XetGuid));
+#if netcoreapp
+            Span<byte> bytes = stackalloc byte[16];
+            value.TryWriteBytes(bytes);
+#else
             byte[] bytes = value.ToByteArray();
+#endif
             Debug.Assert(SmiMetaData.DefaultUniqueIdentifier.MaxLength == bytes.Length, "Invalid length for guid bytes: " + bytes.Length);
 
             if (SqlDbType.Variant == _metaData.SqlDbType)
@@ -618,7 +621,11 @@ namespace System.Data.SqlClient
 
                 _stateObj.WriteByte((byte)_metaData.MaxLength);
             }
+#if netcoreapp
+            _stateObj.WriteByteSpan(bytes);
+#else
             _stateObj.WriteByteArray(bytes, bytes.Length, 0);
+#endif
         }
 
         // valid for SqlDbType.Time
@@ -654,7 +661,7 @@ namespace System.Data.SqlClient
             byte length;
             if (SqlDbType.Variant == _metaData.SqlDbType)
             {
-                // VSTFDevDiv #885208 - DateTimeOffset throws ArgumentException for when passing DateTimeOffset value to a sql_variant TVP 
+                // VSTFDevDiv #885208 - DateTimeOffset throws ArgumentException for when passing DateTimeOffset value to a sql_variant TVP
                 //                      using a SqlDataRecord or SqlDataReader
                 MSS.SmiMetaData dateTimeOffsetMetaData = MSS.SmiMetaData.DefaultDateTimeOffset;
                 scale = MetaType.MetaDateTimeOffset.Scale;
@@ -694,9 +701,9 @@ namespace System.Data.SqlClient
             _variantType = value;
         }
 
-        #endregion
+#endregion
 
-        #region private methods
+#region private methods
         [Conditional("DEBUG")]
         private void CheckSettingOffset(long offset)
         {
@@ -704,6 +711,6 @@ namespace System.Data.SqlClient
             Debug.Assert(offset == _currentOffset, "Invalid offset passed. Should be: " + _currentOffset + ", but was: " + offset);
 #endif
         }
-        #endregion
+#endregion
     }
 }

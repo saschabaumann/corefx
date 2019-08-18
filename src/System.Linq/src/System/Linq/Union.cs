@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -16,12 +16,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
             return first is UnionIterator<TSource> union && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
@@ -132,7 +132,7 @@ namespace System.Linq
                 return false;
             }
         }
-        
+
         /// <summary>
         /// An iterator that yields distinct values from two <see cref="IEnumerable{TSource}"/>.
         /// </summary>
@@ -156,15 +156,12 @@ namespace System.Linq
             internal override IEnumerable<TSource> GetEnumerable(int index)
             {
                 Debug.Assert(index >= 0 && index <= 2);
-                switch (index)
+                return index switch
                 {
-                    case 0:
-                        return _first;
-                    case 1:
-                        return _second;
-                    default:
-                        return null;
-                }
+                    0 => _first,
+                    1 => _second,
+                    _ => null,
+                };
             }
 
             internal override UnionIterator<TSource> Union(IEnumerable<TSource> next)
@@ -203,7 +200,7 @@ namespace System.Linq
                 {
                     // In the unlikely case of this many unions, if we produced a UnionIteratorN
                     // with int.MaxValue then state would overflow before it matched it's index.
-                    // So we use the naïve approach of just having a left and right sequence.
+                    // So we use the naive approach of just having a left and right sequence.
                     return new UnionIterator2<TSource>(this, next, _comparer);
                 }
 

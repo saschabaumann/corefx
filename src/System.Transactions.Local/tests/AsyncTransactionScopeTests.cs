@@ -5,17 +5,18 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.Tracing;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.Transactions.Tests
 {
-    public class AsyncTransactionScopeTests : IDisposable
+    public class AsyncTransactionScopeTests
     {
-        private readonly ITestOutputHelper output;
-
         // Number of threads to create
         private const int iterations = 5;
 
@@ -25,14 +26,13 @@ namespace System.Transactions.Tests
         private static bool s_throwExceptionDefaultOrBeforeAwait;
         private static bool s_throwExceptionAfterAwait;
 
-        public AsyncTransactionScopeTests(ITestOutputHelper output)
+        public AsyncTransactionScopeTests()
         {
-            this.output = output;
             // Make sure we start with Transaction.Current = null.
             Transaction.Current = null;
         }
 
-        public void Dispose()
+        protected void Dispose(bool disposing)
         {
             Transaction.Current = null;
         }
@@ -96,21 +96,18 @@ namespace System.Transactions.Tests
         [InlineData(52)]
         [InlineData(53)]
         [InlineData(54)]
-        [ActiveIssue(31913, TargetFrameworkMonikers.Uap)]
-        public async Task AsyncTSTest(int variation)
+        public void AsyncTSTest(int variation)
         {
-            await Task.Run(delegate
+            RemoteExecutor.Invoke(variationString =>
             {
                 using (var listener = new TestEventListener(new Guid("8ac2d80a-1f1a-431b-ace4-bff8824aef0b"), System.Diagnostics.Tracing.EventLevel.Verbose))
                 {
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-
-                    bool success = false;
                     try
                     {
                         listener.RunWithCallback(events.Enqueue, () =>
                         {
-                            switch (variation)
+                            switch (int.Parse(variationString))
                             {
                                 // Running exception test first to make sure any unintentional leak in ambient transaction during exception will be detected when subsequent test are run.
                                 case 0:
@@ -154,7 +151,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // The following test has Task under TransactionScope and has few variations.  
+                                // The following test has Task under TransactionScope and has few variations.
                                 case 8:
                                     {
                                         DoTaskUnderAsyncTS(false, null);
@@ -181,7 +178,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // Simple Sync TS test  
+                                // Simple Sync TS test
                                 case 13:
                                     {
                                         DoSyncTxWork(false, null);
@@ -193,7 +190,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // Simple Async TS test. "await" points explicitly switches threads across continuations.  
+                                // Simple Async TS test. "await" points explicitly switches threads across continuations.
                                 case 15:
                                     {
                                         AssertTransactionNullAndWaitTask(DoAsyncTxWorkAsync(false, null));
@@ -247,7 +244,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // 2 level deep nested TS test. Parent is Aync TS, child TS can be sync or async. 
+                                // 2 level deep nested TS test. Parent is Aync TS, child TS can be sync or async.
                                 case 25:
                                     {
                                         AssertTransactionNullAndWaitTask(DoAsyncTSL2NestedTxWorkAsync(false, false, false, false, false, null));
@@ -312,7 +309,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // 3 level deep nested TS test. 
+                                // 3 level deep nested TS test.
                                 case 37:
                                     {
                                         SyncTSL3AsyncTSL2NestedTxWork(false, false, true, false, false, true, null);
@@ -376,7 +373,7 @@ namespace System.Transactions.Tests
                                         break;
                                     }
 
-                                // Have bunch of parallel tasks running various nested TS test cases. There parallel tasks are wrapped by a TransactionScope. 
+                                // Have bunch of parallel tasks running various nested TS test cases. There parallel tasks are wrapped by a TransactionScope.
                                 case 49:
                                     {
                                         AssertTransactionNullAndWaitTask(DoTaskWorkAsync(false, false, null));
@@ -423,17 +420,19 @@ namespace System.Transactions.Tests
                                     }
                             }
                         });
-                        success = true;
                     }
-                    finally
+                    catch (Exception exc)
                     {
-                        if (!success)
+                        var sb = new StringBuilder();
+                        sb.AppendLine("Test failed with events:");
+                        foreach (EventWrittenEventArgs actualevent in events)
                         {
-                            HelperFunctions.DisplaySysTxTracing(output, events);
+                            sb.AppendLine($"{actualevent.Opcode} : {string.Format(actualevent.Message, actualevent.Payload.ToArray())}");
                         }
+                        throw new Exception(sb.ToString(), exc);
                     }
                 }
-            });
+            }, variation.ToString()).Dispose();
         }
 
         [Theory]
@@ -460,7 +459,7 @@ namespace System.Transactions.Tests
                 {
                     try
                     {
-                        // Since we use BlockCommitUntilComplete dependent transaction to syncronize the root TransactionScope, the ambient Tx may not be available and will be be disposed and block on Commit.
+                        // Since we use BlockCommitUntilComplete dependent transaction to syncronize the root TransactionScope, the ambient Tx may not be available and will be disposed and block on Commit.
                         // The flag will ensure we explicitly syncronize before disposing the root TransactionScope and the ambient transaction will still be available in the Task.
                         if (syncronizeScope)
                         {
@@ -832,7 +831,7 @@ namespace System.Transactions.Tests
         [InlineData(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled)]
         [InlineData(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Enabled)]
         [InlineData(TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Suppress, TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Enabled)]
-        // Sync TS nested inside Async TS. 
+        // Sync TS nested inside Async TS.
         [InlineData(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.RequiresNew, TransactionScopeAsyncFlowOption.Suppress)]
         [InlineData(TransactionScopeOption.Required, TransactionScopeAsyncFlowOption.Enabled, TransactionScopeOption.Suppress, TransactionScopeAsyncFlowOption.Suppress)]
@@ -960,7 +959,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId2);
                 if (child1ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId2);
+                    Assert.Null(txId2);
                 }
             }
 
@@ -973,7 +972,7 @@ namespace System.Transactions.Tests
                 Assert.NotEqual(txId1, txId4);
                 if (child2ScopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId4);
+                    Assert.Null(txId4);
                 }
             }
         }
@@ -1064,7 +1063,7 @@ namespace System.Transactions.Tests
 
                 if (scopeOption == TransactionScopeOption.Suppress)
                 {
-                    Assert.Equal(null, txId1);
+                    Assert.Null(txId1);
                     Assert.Equal(txId1, txId2);
                     Assert.Equal(txId2, txId3);
                 }
@@ -1644,7 +1643,7 @@ namespace System.Transactions.Tests
             Task.WaitAll(a);
         }
 
-        public static void VerifyTxId(bool requiresNew, string parentTxId, string beforeTxId, string afterTxId)
+        private static void VerifyTxId(bool requiresNew, string parentTxId, string beforeTxId, string afterTxId)
         {
             Assert.Equal(beforeTxId, afterTxId);
             if (requiresNew)
@@ -1660,7 +1659,7 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void AssertTransaction(string txId)
+        private static void AssertTransaction(string txId)
         {
             if (string.IsNullOrEmpty(txId))
             {
@@ -1671,23 +1670,23 @@ namespace System.Transactions.Tests
                 Assert.Equal(txId, AssertAndGetCurrentTransactionId());
             }
         }
-        public static void AssertTransactionNull()
+        private static void AssertTransactionNull()
         {
-            Assert.Equal(null, Transaction.Current);
+            Assert.Null(Transaction.Current);
         }
 
-        public static void AssertTransactionNotNull()
+        private static void AssertTransactionNotNull()
         {
-            Assert.NotEqual(null, Transaction.Current);
+            Assert.NotNull(Transaction.Current);
         }
 
-        public static string AssertAndGetCurrentTransactionId()
+        private static string AssertAndGetCurrentTransactionId()
         {
             AssertTransactionNotNull();
             return Transaction.Current.TransactionInformation.LocalIdentifier;
         }
 
-        public static string AssertAndGetCurrentTransactionId(TransactionScopeOption scopeOption)
+        private static string AssertAndGetCurrentTransactionId(TransactionScopeOption scopeOption)
         {
             if (scopeOption == TransactionScopeOption.Suppress)
             {
@@ -1701,33 +1700,33 @@ namespace System.Transactions.Tests
             }
         }
 
-        public static void AssertTransactionNullAndWaitTask(Task<string> task)
+        private static void AssertTransactionNullAndWaitTask(Task<string> task)
         {
             AssertTransactionNull();
             task.Wait();
             AssertTransactionNull();
         }
 
-        public static void AssertTransactionNullAndWaitTask(Task task)
+        private static void AssertTransactionNullAndWaitTask(Task task)
         {
             AssertTransactionNull();
             task.Wait();
             AssertTransactionNull();
         }
 
-        public static void SetExceptionInjection(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait)
+        private static void SetExceptionInjection(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait)
         {
             s_throwExceptionDefaultOrBeforeAwait = exceptionDefaultOrBeforeAwait;
             s_throwExceptionAfterAwait = exceptionAfterAwait;
         }
 
-        public static void ResetExceptionInjection()
+        private static void ResetExceptionInjection()
         {
             s_throwExceptionDefaultOrBeforeAwait = false;
             s_throwExceptionAfterAwait = false;
         }
 
-        public static void HandleException(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait, Action action)
+        private static void HandleException(bool exceptionDefaultOrBeforeAwait, bool exceptionAfterAwait, Action action)
         {
             bool hasException = false;
 
@@ -1743,7 +1742,7 @@ namespace System.Transactions.Tests
             }
 
             AssertTransactionNull();
-            Assert.Equal<bool>(hasException, true);
+            Assert.True(hasException);
             ResetExceptionInjection();
         }
     }

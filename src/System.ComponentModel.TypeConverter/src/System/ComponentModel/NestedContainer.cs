@@ -98,7 +98,7 @@ namespace System.ComponentModel
         private void OnOwnerDisposed(object sender, EventArgs e) => Dispose();
 
         /// <summary>
-        /// Simple site implementation. We do some special processing to name the site, but 
+        /// Simple site implementation. We do some special processing to name the site, but
         /// that's about it.
         /// </summary>
         private class Site : INestedSite
@@ -147,7 +147,7 @@ namespace System.ComponentModel
                         string childName = _name;
                         if (ownerName != null)
                         {
-                            childName = string.Format(CultureInfo.InvariantCulture, "{0}.{1}", ownerName, childName);
+                            childName = ownerName + "." + childName;
                         }
 
                         return childName;

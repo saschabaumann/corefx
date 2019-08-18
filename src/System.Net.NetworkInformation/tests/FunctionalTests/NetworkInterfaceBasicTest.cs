@@ -86,8 +86,8 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]  // Some APIs are not supported on OSX
-        public void BasicTest_AccessInstanceProperties_NoExceptions_Osx()
+        [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
+        public void BasicTest_AccessInstanceProperties_NoExceptions_Bsd()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
@@ -227,8 +227,8 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]  // Some APIs are not supported on OSX
-        public void BasicTest_GetIPInterfaceStatistics_Success_OSX()
+        [PlatformSpecific(TestPlatforms.OSX|TestPlatforms.FreeBSD)]
+        public void BasicTest_GetIPInterfaceStatistics_Success_Bsd()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
             {
@@ -258,7 +258,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Theory]
-        [PlatformSpecific(~TestPlatforms.OSX)]
+        [PlatformSpecific(~(TestPlatforms.OSX|TestPlatforms.FreeBSD))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
@@ -269,7 +269,7 @@ namespace System.Net.NetworkInformation.Tests
                 server.Bind(new IPEndPoint(ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback, 0));
                 var serverEndPoint = (IPEndPoint)server.LocalEndPoint;
 
-                Task<SocketReceiveMessageFromResult> receivedTask = 
+                Task<SocketReceiveMessageFromResult> receivedTask =
                     server.ReceiveMessageFromAsync(new ArraySegment<byte>(new byte[1]), SocketFlags.None, serverEndPoint);
                 while (!receivedTask.IsCompleted)
                 {

@@ -22,7 +22,7 @@ namespace System.IO
 
         public static bool FileExists(ReadOnlySpan<char> fullPath)
         {
-            Interop.ErrorInfo ignored;    
+            Interop.ErrorInfo ignored;
             // File.Exists() explicitly checks for a trailing separator and returns false if found. FileInfo.Exists and all other
             // internal usages do not check for the trailing separator. Historically we've always removed the trailing separator
             // when getting attributes as trailing separators are generally not accepted by Windows APIs. Unix will take
@@ -30,7 +30,7 @@ namespace System.IO
             // our historical behavior (outside of File.Exists()), we need to trim.
             //
             // See http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap04.html#tag_04_11 for details.
-            return FileExists(PathInternal.TrimEndingDirectorySeparator(fullPath), Interop.Sys.FileTypes.S_IFREG, out ignored);
+            return FileExists(Path.TrimEndingDirectorySeparator(fullPath), Interop.Sys.FileTypes.S_IFREG, out ignored);
         }
 
         private static bool FileExists(ReadOnlySpan<char> fullPath, int fileType, out Interop.ErrorInfo errorInfo)
@@ -56,6 +56,6 @@ namespace System.IO
             return
                 (fileType == Interop.Sys.FileTypes.S_IFDIR) ==
                 ((fileinfo.Mode & Interop.Sys.FileTypes.S_IFMT) == Interop.Sys.FileTypes.S_IFDIR);
-        } 
+        }
     }
 }

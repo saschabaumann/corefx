@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project>
   <ItemGroup>
     <Compile Include="$(IntermediateOutputPath)\ThisAssembly.cs"/>
   </ItemGroup>
@@ -17,7 +16,7 @@ namespace Microsoft.XmlSerializer.Generator
         internal const string AssemblyVersion = "$(AssemblyVersion)"%3B
         internal const string Version = "$(AssemblyFileVersion)"%3B
         internal const string PreReleaseLabel = "$(PreReleaseLabel)"%3B
-        
+
         internal static string InformationalVersion
         {
             get

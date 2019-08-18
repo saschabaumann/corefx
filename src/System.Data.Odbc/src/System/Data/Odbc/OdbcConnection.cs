@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.InteropServices;
-using System.Security.Permissions;
 using System.Text;
 using SysTx = System.Transactions;
 
@@ -22,7 +21,7 @@ namespace System.Data.Odbc
         private WeakReference _weakTransaction;
 
         private OdbcConnectionHandle _connectionHandle;
-        private ConnectionState _extraState = default(ConnectionState);    // extras, like Executing and Fetching, that we add to the State.
+        private readonly ConnectionState _extraState = default(ConnectionState);    // extras, like Executing and Fetching, that we add to the State.
 
         public OdbcConnection(string connectionString) : this()
         {
@@ -207,7 +206,7 @@ namespace System.Data.Odbc
                     }
                     return ProviderInfo.DriverName;
                 }
-                return ADP.StrEmpty;
+                return string.Empty;
             }
         }
 
@@ -395,7 +394,7 @@ namespace System.Data.Odbc
                 }
                 if ((ODBC32.RetCode.SUCCESS == retcode) || (ODBC32.RetCode.SUCCESS_WITH_INFO == retcode))
                 {
-                    value = Encoding.Unicode.GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
+                    value = (BitConverter.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
                 }
                 else if (retcode == ODBC32.RetCode.ERROR)
                 {
@@ -498,7 +497,7 @@ namespace System.Data.Odbc
                 }
                 if (retcode == ODBC32.RetCode.SUCCESS || retcode == ODBC32.RetCode.SUCCESS_WITH_INFO)
                 {
-                    value = Encoding.Unicode.GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
+                    value = (BitConverter.IsLittleEndian ? Encoding.Unicode : Encoding.BigEndianUnicode).GetString(buffer, 0, Math.Min(cbActual, buffer.Length));
                 }
                 else if (handleError)
                 {
@@ -589,7 +588,7 @@ namespace System.Data.Odbc
                 }
                 catch (Exception e)
                 {
-                    // 
+                    //
                     if (!ADP.IsCatchableOrSecurityExceptionType(e))
                     {
                         throw;
@@ -724,7 +723,7 @@ namespace System.Data.Odbc
                     ProviderInfo.NoConnectionDead = true;
                     break;
                 default:
-                    Debug.Assert(false, "Can't flag unknown Attribute");
+                    Debug.Fail("Can't flag unknown Attribute");
                     break;
             }
         }
@@ -743,7 +742,7 @@ namespace System.Data.Odbc
                     ProviderInfo.NoSqlSoptSSHiddenColumns = true;
                     break;
                 default:
-                    Debug.Assert(false, "Can't flag unknown Attribute");
+                    Debug.Fail("Can't flag unknown Attribute");
                     break;
             }
         }
@@ -760,7 +759,7 @@ namespace System.Data.Odbc
                         break;
                     // SSS_WARNINGS_ON
                     default:
-                        Debug.Assert(false, "Can't flag unknown Attribute");
+                        Debug.Fail("Can't flag unknown Attribute");
                         break;
                 }
             }
@@ -769,7 +768,7 @@ namespace System.Data.Odbc
                 switch (v2FieldId)
                 {
                     default:
-                        Debug.Assert(false, "Can't flag unknown Attribute");
+                        Debug.Fail("Can't flag unknown Attribute");
                         break;
                 }
             }
@@ -788,7 +787,7 @@ namespace System.Data.Odbc
             }
             else
             {
-                Debug.Assert(false, "GetFunctions called and ConnectionHandle is null (connection is disposed?)");
+                Debug.Fail("GetFunctions called and ConnectionHandle is null (connection is disposed?)");
                 throw ODBC.ConnectionClosed();
             }
 
@@ -839,7 +838,7 @@ namespace System.Data.Odbc
                         break;
                     }
                 default:
-                    Debug.Assert(false, "Testing that sqltype is currently not supported");
+                    Debug.Fail("Testing that sqltype is currently not supported");
                     return false;
             }
             // now we can check if we have already tested that type
@@ -876,7 +875,7 @@ namespace System.Data.Odbc
                         break;
                     }
                 default:
-                    Debug.Assert(false, "Testing that sqltype is currently not supported");
+                    Debug.Fail("Testing that sqltype is currently not supported");
                     return false;
             }
             return (0 != (ProviderInfo.RestrictedSQLBindTypes & (int)sqlcvt));
@@ -888,7 +887,7 @@ namespace System.Data.Odbc
         {
             DbTransaction transaction = InnerConnection.BeginTransaction(isolationLevel);
 
-            // VSTFDEVDIV# 560355 - InnerConnection doesn't maintain a ref on the outer connection (this) and 
+            // VSTFDEVDIV# 560355 - InnerConnection doesn't maintain a ref on the outer connection (this) and
             //   subsequently leaves open the possibility that the outer connection could be GC'ed before the DbTransaction
             //   is fully hooked up (leaving a DbTransaction with a null connection property). Ensure that this is reachable
             //   until the completion of BeginTransaction with KeepAlive
@@ -968,5 +967,3 @@ namespace System.Data.Odbc
         }
     }
 }
-
-

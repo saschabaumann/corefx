@@ -179,7 +179,7 @@ namespace System.Net
     }
 
     /// <summary>
-    /// <para>The FtpWebRequest class implements a basic FTP client interface.
+    /// The FtpWebRequest class implements a basic FTP client interface.
     /// </summary>
     public sealed class FtpWebRequest : WebRequest
     {
@@ -208,7 +208,7 @@ namespace System.Net
         private Exception _exception;
 
         private TimerThread.Queue _timerQueue = s_DefaultTimerQueue;
-        private TimerThread.Callback _timerCallback;
+        private readonly TimerThread.Callback _timerCallback;
 
         private bool _enableSsl;
         private FtpControlStream _connection;
@@ -1512,7 +1512,7 @@ namespace System.Net
         }
 
         /// <summary>
-        /// <para>Aborts underlying connection to FTP server (command & data)</para>
+        /// <para>Aborts underlying connection to FTP server (command &amp; data)</para>
         /// </summary>
         public override void Abort()
         {
@@ -1831,6 +1831,3 @@ namespace System.Net
         }
     } // class FtpWebRequestCreator
 } // namespace System.Net
-
-
-

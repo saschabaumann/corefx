@@ -47,7 +47,7 @@ namespace System.CodeDom.Compiler
         public CodeDomProvider CreateProvider()
         {
             // if the provider defines an IDictionary<string, string> ctor and
-            // provider options have been provided then call that and give it the 
+            // provider options have been provided then call that and give it the
             // provider options dictionary.  Otherwise call the normal one.
 
             Debug.Assert(_providerOptions != null, "Created CompilerInfo w/ null _providerOptions");
@@ -78,7 +78,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                throw new InvalidOperationException(SR.Format(SR.Provider_does_not_support_options, CodeDomProviderType.ToString()));
+                throw new InvalidOperationException(SR.Format(SR.Provider_does_not_support_options, CodeDomProviderType));
             }
         }
 

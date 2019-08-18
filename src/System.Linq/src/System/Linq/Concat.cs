@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -13,12 +13,12 @@ namespace System.Linq
         {
             if (first == null)
             {
-                throw Error.ArgumentNull(nameof(first));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.first);
             }
 
             if (second == null)
             {
-                throw Error.ArgumentNull(nameof(second));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.second);
             }
 
             return first is ConcatIterator<TSource> firstConcat
@@ -70,12 +70,12 @@ namespace System.Linq
             {
                 Debug.Assert(index >= 0 && index <= 2);
 
-                switch (index)
+                return index switch
                 {
-                    case 0: return _first;
-                    case 1: return _second;
-                    default: return null;
-                }
+                    0 => _first,
+                    1 => _second,
+                    _ => null,
+                };
             }
         }
 
@@ -86,7 +86,7 @@ namespace System.Linq
         /// <remarks>
         /// To handle chains of >= 3 sources, we chain the <see cref="Concat"/> iterators together and allow
         /// <see cref="GetEnumerable"/> to fetch enumerables from the previous sources.  This means that rather
-        /// than each <see cref="IEnumerator{T}.MoveNext"/> and <see cref="IEnumerator{T}.Current"/> calls having to traverse all of the previous
+        /// than each <see cref="System.Collections.IEnumerator.MoveNext"/> and <see cref="IEnumerator{T}.Current"/> calls having to traverse all of the previous
         /// sources, we only have to traverse all of the previous sources once per chained enumerable.  An alternative
         /// would be to use an array to store all of the enumerables, but this has a much better memory profile and
         /// without much additional run-time cost.
@@ -97,7 +97,7 @@ namespace System.Linq
             /// The linked list of previous sources.
             /// </summary>
             private readonly ConcatIterator<TSource> _tail;
-            
+
             /// <summary>
             /// The source associated with this iterator.
             /// </summary>
@@ -113,8 +113,8 @@ namespace System.Linq
             /// otherwise, <c>false</c>.
             /// </summary>
             /// <remarks>
-            /// This flag allows us to determine in O(1) time whether we can preallocate for <see cref="ToArray"/>
-            /// and <see cref="ConcatIterator{TSource}.ToList"/>, and whether we can get the count of the iterator cheaply.
+            /// This flag allows us to determine in O(1) time whether we can preallocate for ToArray/ToList,
+            /// and whether we can get the count of the iterator cheaply.
             /// </remarks>
             private readonly bool _hasOnlyCollections;
 
@@ -141,7 +141,7 @@ namespace System.Linq
             }
 
             private ConcatNIterator<TSource> PreviousN => _tail as ConcatNIterator<TSource>;
-            
+
             public override Iterator<TSource> Clone() => new ConcatNIterator<TSource>(_tail, _head, _headIndex, _hasOnlyCollections);
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
@@ -150,10 +150,10 @@ namespace System.Linq
                 {
                     // In the unlikely case of this many concatenations, if we produced a ConcatNIterator
                     // with int.MaxValue then state would overflow before it matched its index.
-                    // So we use the naïve approach of just having a left and right sequence.
+                    // So we use the naive approach of just having a left and right sequence.
                     return new Concat2Iterator<TSource>(this, next);
                 }
-                
+
                 bool hasOnlyCollections = _hasOnlyCollections && next is ICollection<TSource>;
                 return new ConcatNIterator<TSource>(this, next, _headIndex + 1, hasOnlyCollections);
             }

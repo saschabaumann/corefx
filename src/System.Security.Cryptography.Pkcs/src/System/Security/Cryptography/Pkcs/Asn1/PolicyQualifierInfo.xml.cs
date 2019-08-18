@@ -1,4 +1,9 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+#pragma warning disable SA1028 // ignore whitespace warnings for generated code
+using System;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Asn1;
@@ -21,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.PushSequence(tag);
             
             writer.WriteObjectIdentifier(PolicyQualifierId);
-            writer.WriteEncodedValue(Qualifier);
+            writer.WriteEncodedValue(Qualifier.Span);
             writer.PopSequence(tag);
         }
 
@@ -56,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             AsnReader sequenceReader = reader.ReadSequence(expectedTag);
             
             decoded.PolicyQualifierId = sequenceReader.ReadObjectIdentifierAsString();
-            decoded.Qualifier = sequenceReader.GetEncodedValue();
+            decoded.Qualifier = sequenceReader.ReadEncodedValue();
 
             sequenceReader.ThrowIfNotEmpty();
         }

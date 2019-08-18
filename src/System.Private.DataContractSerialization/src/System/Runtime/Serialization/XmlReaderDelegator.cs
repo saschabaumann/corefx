@@ -10,7 +10,7 @@ using System.Xml.Serialization;
 
 namespace System.Runtime.Serialization
 {
-#if USE_REFEMIT || uapaot
+#if USE_REFEMIT
     public class XmlReaderDelegator
 #else
     internal class XmlReaderDelegator
@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization
         internal string GetAttribute(int i)
         {
             if (isEndOfEmptyElement)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(i), SR.Format(SR.XmlElementAttributes)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(i), SR.XmlElementAttributes));
             return reader.GetAttribute(i);
         }
 
@@ -116,7 +116,7 @@ namespace System.Runtime.Serialization
             return -1;
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public bool IsStartElement()
 #else
         internal bool IsStartElement()
@@ -130,7 +130,7 @@ namespace System.Runtime.Serialization
             return !isEndOfEmptyElement && reader.IsStartElement(localname, ns);
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
 #else
         internal bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
@@ -155,7 +155,7 @@ namespace System.Runtime.Serialization
         internal void MoveToAttribute(int i)
         {
             if (isEndOfEmptyElement)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(i), SR.Format(SR.XmlElementAttributes)));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(i), SR.XmlElementAttributes));
             reader.MoveToAttribute(i);
         }
 
@@ -174,7 +174,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.MoveToNextAttribute();
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public XmlNodeType NodeType
 #else
         internal XmlNodeType NodeType
@@ -212,7 +212,7 @@ namespace System.Runtime.Serialization
             return isEndOfEmptyElement ? false : reader.ReadAttributeValue();
         }
 
-#if USE_REFEMIT        
+#if USE_REFEMIT
         public void ReadEndElement()
 #else
         internal void ReadEndElement()
@@ -1102,7 +1102,7 @@ namespace System.Runtime.Serialization
         public bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
 #else
         internal bool TryReadDoubleArray(XmlObjectSerializerReadContext context,
-#endif   
+#endif
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, out double[] array)
         {
@@ -1234,4 +1234,3 @@ namespace System.Runtime.Serialization
         }
     }
 }
-

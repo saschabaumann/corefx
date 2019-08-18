@@ -135,8 +135,8 @@ namespace System.Tests
             object[] args = new object[] { null };
             d.DynamicInvoke(args);
             MyStruct s = (MyStruct)(args[0]);
-            Assert.Equal(s.X, 7);
-            Assert.Equal(s.Y, 8);
+            Assert.Equal(7, s.X);
+            Assert.Equal(8, s.Y);
         }
 
         [Fact]
@@ -165,7 +165,7 @@ namespace System.Tests
             Delegate d = new EnumEnumDelegate(EnumEnumMethod);
             d.DynamicInvoke(o1, o2);
         }
-        
+
         [Fact]
         public static void DynamicInvoke_SizePreservingNonVauePreservingConversion_ThrowsArgumentException()
         {
@@ -447,8 +447,8 @@ namespace System.Tests
 
         private static void ValueTypeMethod(MyStruct s)
         {
-            Assert.Equal(s.X, 0);
-            Assert.Equal(s.Y, 0);
+            Assert.Equal(0, s.X);
+            Assert.Equal(0, s.Y);
         }
 
         private delegate void ValueTypeDelegate(MyStruct s);
@@ -456,24 +456,24 @@ namespace System.Tests
         private static void NullableMethod(int? n)
         {
             Assert.True(n.HasValue);
-            Assert.Equal(n.Value, 7);
+            Assert.Equal(7, n.Value);
         }
 
         private delegate void NullableDelegate(int? s);
 
-        private enum ShortEnum : short
+        public enum ShortEnum : short
         {
             One = 1,
             Seven = 7,
         }
 
-        private enum IntEnum : int
+        public enum IntEnum : int
         {
             One = 1,
             Seven = 7,
         }
 
-        private enum U4 : uint
+        public enum U4 : uint
         {
             One = 1,
             Seven = 7,
@@ -682,11 +682,10 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/coreclr#15196")]
         public static void CreateDelegate2_Target_GenericTypeParameter()
         {
 
-            Type theT = typeof(G<>).GetTypeInfo().GenericTypeParameters[0];
+            Type theT = typeof(DummyGenericClassForDelegateTests<>).GetTypeInfo().GenericTypeParameters[0];
             Type delegateType = typeof(Func<object, object, bool>);
             AssertExtensions.Throws<ArgumentException>("target", () => Delegate.CreateDelegate(delegateType, theT, "ReferenceEquals"));
         }
@@ -1158,7 +1157,7 @@ namespace System.Tests
             {
             }
 
-            public new static int DoRun(C x)
+            public static new int DoRun(C x)
             {
                 return 107;
             }
@@ -1199,3 +1198,5 @@ namespace System.Tests
         #endregion Test Setup
     }
 }
+
+internal class DummyGenericClassForDelegateTests<T> { }

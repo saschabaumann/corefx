@@ -37,7 +37,7 @@ namespace System.Xml
         // Static fields with implicit initialization
         //
         private static XmlCharType s_xmlCharType = XmlCharType.Instance;
-        private static CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
+        private static readonly CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
@@ -109,7 +109,7 @@ namespace System.Xml
                 matchPos = m.Index;
             }
 
-            for (int position = 0; position < length - s_encodedCharLength + 1; position++)
+            for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
@@ -142,7 +142,7 @@ namespace System.Xml
                         {
                             if (u <= 0x0010ffff)
                             { //convert to two chars
-                                copyPosition = position + s_encodedCharLength + 4;
+                                copyPosition = position + EncodedCharLength + 4;
                                 char lowChar, highChar;
                                 XmlCharType.SplitSurrogateChar(u, out lowChar, out highChar);
                                 bufBld.Append(highChar);
@@ -152,20 +152,20 @@ namespace System.Xml
                         }
                         else
                         { //convert to single char
-                            copyPosition = position + s_encodedCharLength + 4;
+                            copyPosition = position + EncodedCharLength + 4;
                             bufBld.Append((char)u);
                         }
-                        position += s_encodedCharLength - 1 + 4; //just skip
+                        position += EncodedCharLength - 1 + 4; //just skip
                     }
                     else
                     {
-                        copyPosition = position + s_encodedCharLength;
+                        copyPosition = position + EncodedCharLength;
                         bufBld.Append((char)(
                             FromHex(name[position + 2]) * 0x1000 +
                             FromHex(name[position + 3]) * 0x100 +
                             FromHex(name[position + 4]) * 0x10 +
                             FromHex(name[position + 5])));
-                        position += s_encodedCharLength - 1;
+                        position += EncodedCharLength - 1;
                     }
                 }
             }
@@ -235,7 +235,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        bufBld.Append(((Int32)name[0]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append(((int)name[0]).ToString("X4", CultureInfo.InvariantCulture));
                         copyPosition = 1;
                     }
 
@@ -280,7 +280,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        bufBld.Append(((Int32)name[position]).ToString("X4", CultureInfo.InvariantCulture));
+                        bufBld.Append(((int)name[position]).ToString("X4", CultureInfo.InvariantCulture));
                         copyPosition = position + 1;
                     }
                     bufBld.Append('_');
@@ -300,7 +300,7 @@ namespace System.Xml
             }
         }
 
-        private static readonly int s_encodedCharLength = 7; // ("_xFFFF_".Length);
+        private const int EncodedCharLength = 7; // ("_xFFFF_".Length);
         private static volatile Regex s_encodeCharPattern;
         private static volatile Regex s_decodeCharPattern;
         private static int FromHex(char digit)
@@ -572,8 +572,8 @@ namespace System.Xml
 
         //
         // Verification methods for single characters and surrogates
-        // 
-        // In cases where the direct call into XmlCharType would not get automatically inlined (because of the use of byte* field), 
+        //
+        // In cases where the direct call into XmlCharType would not get automatically inlined (because of the use of byte* field),
         // direct access to the XmlCharType.charProperties is used instead (= manual inlining).
         //
 
@@ -605,7 +605,7 @@ namespace System.Xml
         }
 #endif
 
-        // Valid XML character – as defined in XML 1.0 spec (fifth edition) production [2] Char
+        // Valid XML character - as defined in XML 1.0 spec (fifth edition) production [2] Char
         public static unsafe bool IsXmlChar(char ch)
         {
             return s_xmlCharType.IsCharData(ch);
@@ -616,13 +616,13 @@ namespace System.Xml
             return XmlCharType.IsHighSurrogate(highChar) && XmlCharType.IsLowSurrogate(lowChar);
         }
 
-        // Valid PUBLIC ID character – as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
+        // Valid PUBLIC ID character - as defined in XML 1.0 spec (fifth edition) production [13] PublidChar
         public static bool IsPublicIdChar(char ch)
         {
             return s_xmlCharType.IsPubidChar(ch);
         }
 
-        // Valid Xml whitespace – as defined in XML 1.0 spec (fifth edition) production [3] S
+        // Valid Xml whitespace - as defined in XML 1.0 spec (fifth edition) production [3] S
         public static unsafe bool IsWhitespaceChar(char ch)
         {
             return s_xmlCharType.IsWhiteSpace(ch);
@@ -655,113 +655,65 @@ namespace System.Xml
         // Guid                                                                    x
         // -----------------------------------------------------------------------------
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(bool value)
         {
             return value ? "true" : "false";
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(char value)
         {
             return value.ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(decimal value)
         {
             return value.ToString(null, NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(sbyte value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString4"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(short value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString5"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(int value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString15"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(long value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString6"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(byte value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString7"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(ushort value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString8"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(uint value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static string ToString(ulong value)
         {
             return value.ToString(null, s_invariantCultureInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString9"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(float value)
         {
             if (float.IsNegativeInfinity(value)) return "-INF";
@@ -773,10 +725,6 @@ namespace System.Xml
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString10"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(double value)
         {
             if (double.IsNegativeInfinity(value)) return "-INF";
@@ -788,38 +736,22 @@ namespace System.Xml
             return value.ToString("R", NumberFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString11"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(TimeSpan value)
         {
             return new XsdDuration(value).ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString12"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use XmlConvert.ToString() that takes in XmlDateTimeSerializationMode")]
         public static string ToString(DateTime value)
         {
             return ToString(value, "yyyy-MM-ddTHH:mm:ss.fffffffzzzzzz");
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString13"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(DateTime value, string format)
         {
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString14"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(DateTime value, XmlDateTimeSerializationMode dateTimeOption)
         {
             switch (dateTimeOption)
@@ -857,19 +789,11 @@ namespace System.Xml
             return value.ToString(format, DateTimeFormatInfo.InvariantInfo);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString15"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static string ToString(Guid value)
         {
             return value.ToString();
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToBoolean"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static bool ToBoolean(string s)
         {
             s = TrimString(s);
@@ -895,10 +819,6 @@ namespace System.Xml
             return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToChar"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static char ToChar(string s)
         {
             if (s == null)
@@ -921,10 +841,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDecimal"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static decimal ToDecimal(string s)
         {
             return decimal.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowDecimalPoint | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -953,10 +869,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSByte"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static sbyte ToSByte(string s)
         {
@@ -972,10 +884,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static short ToInt16(string s)
         {
             return short.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -990,10 +898,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt32"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static int ToInt32(string s)
         {
             return int.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1008,10 +912,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToInt64"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static long ToInt64(string s)
         {
             return long.Parse(s, NumberStyles.AllowLeadingSign | NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1026,10 +926,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToByte"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static byte ToByte(string s)
         {
             return byte.Parse(s, NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite, NumberFormatInfo.InvariantInfo);
@@ -1044,10 +940,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt16"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static ushort ToUInt16(string s)
         {
@@ -1063,10 +955,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt32"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static uint ToUInt32(string s)
         {
@@ -1083,10 +971,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToUInt64"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [CLSCompliant(false)]
         public static ulong ToUInt64(string s)
         {
@@ -1102,10 +986,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToSingle"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static float ToSingle(string s)
         {
             s = TrimString(s);
@@ -1143,10 +1023,6 @@ namespace System.Xml
             return null;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDouble"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static double ToDouble(string s)
         {
             s = TrimString(s);
@@ -1249,10 +1125,6 @@ namespace System.Xml
             return (value - temp == 0.5) ? temp + 1 : temp;
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToTimeSpan"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static TimeSpan ToTimeSpan(string s)
         {
             XsdDuration duration;
@@ -1315,7 +1187,7 @@ namespace System.Xml
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFFzzzzzz", //dateTime
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFF",
                     "yyyy-MM-ddTHH:mm:ss.FFFFFFFZ",
-                    "HH:mm:ss.FFFFFFF",                  //time 
+                    "HH:mm:ss.FFFFFFF",                  //time
                     "HH:mm:ss.FFFFFFFZ",
                     "HH:mm:ss.FFFFFFFzzzzzz",
                     "yyyy-MM-dd",                   // date
@@ -1340,38 +1212,22 @@ namespace System.Xml
             }
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         [Obsolete("Use XmlConvert.ToDateTime() that takes in XmlDateTimeSerializationMode")]
         public static DateTime ToDateTime(string s)
         {
             return ToDateTime(s, AllDateTimeFormats);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime1"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, string format)
         {
             return DateTime.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime2"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, string[] formats)
         {
             return DateTime.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToDateTime3"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static DateTime ToDateTime(string s, XmlDateTimeSerializationMode dateTimeOption)
         {
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
@@ -1429,10 +1285,6 @@ namespace System.Xml
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToGuid"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public static Guid ToGuid(string s)
         {
             return new Guid(s);
@@ -1459,37 +1311,23 @@ namespace System.Xml
             return exception;
         }
 
-        private static DateTime SwitchToLocalTime(DateTime value)
-        {
-            switch (value.Kind)
+        private static DateTime SwitchToLocalTime(DateTime value) =>
+            value.Kind switch
             {
-                case DateTimeKind.Local:
-                    return value;
+                DateTimeKind.Local => value,
+                DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Local),
+                DateTimeKind.Utc => value.ToLocalTime(),
+                _ => value,
+            };
 
-                case DateTimeKind.Unspecified:
-                    return new DateTime(value.Ticks, DateTimeKind.Local);
-
-                case DateTimeKind.Utc:
-                    return value.ToLocalTime();
-            }
-            return value;
-        }
-
-        private static DateTime SwitchToUtcTime(DateTime value)
-        {
-            switch (value.Kind)
+        private static DateTime SwitchToUtcTime(DateTime value) =>
+            value.Kind switch
             {
-                case DateTimeKind.Utc:
-                    return value;
-
-                case DateTimeKind.Unspecified:
-                    return new DateTime(value.Ticks, DateTimeKind.Utc);
-
-                case DateTimeKind.Local:
-                    return value.ToUniversalTime();
-            }
-            return value;
-        }
+                DateTimeKind.Utc => value,
+                DateTimeKind.Unspecified => new DateTime(value.Ticks, DateTimeKind.Utc),
+                DateTimeKind.Local => value.ToUniversalTime(),
+                _ => value,
+            };
 
         internal static Uri ToUri(string s)
         {

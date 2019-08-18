@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.ComponentModel.Design.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
@@ -23,7 +24,8 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object in the given
         /// source type to the native type of the converter using the context.
         /// </summary>
-        public virtual bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType) => false;
+        public virtual bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+            => sourceType == typeof(InstanceDescriptor);
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given
@@ -50,6 +52,10 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
+            if (value is InstanceDescriptor instanceDescriptor)
+            {
+                return instanceDescriptor.Invoke();
+            }
             throw GetConvertFromException(value);
         }
 
@@ -171,7 +177,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Re-creates an <see cref='System.Object'/> given a set of property values for the object.
+        /// Re-creates an <see cref='object'/> given a set of property values for the object.
         /// </summary>
         public object CreateInstance(IDictionary propertyValues)
         {
@@ -179,7 +185,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Re-creates an <see cref='System.Object'/> given a set of property values for the object.
+        /// Re-creates an <see cref='object'/> given a set of property values for the object.
         /// </summary>
         public virtual object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues) => null;
 
@@ -204,16 +210,16 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether changing a value on this object requires a call to
-        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value.
+        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance(IDictionary)'/> to create a new value.
         /// </summary>
         public bool GetCreateInstanceSupported() => GetCreateInstanceSupported(null);
 
         /// <summary>
-        /// 
+        ///
         /// Gets a value indicating whether changing a value on this object requires a call to
-        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance'/> to create a new value,
+        /// <see cref='System.ComponentModel.TypeConverter.CreateInstance(IDictionary)'/> to create a new value,
         /// using the specified context.
-        /// 
+        ///
         /// </summary>
         public virtual bool GetCreateInstanceSupported(ITypeDescriptorContext context) => false;
 
@@ -223,10 +229,10 @@ namespace System.ComponentModel
         public PropertyDescriptorCollection GetProperties(object value) => GetProperties(null, value);
 
         /// <summary>
-        /// 
+        ///
         /// Gets a collection of properties for the type of array specified by the value parameter using
         /// the specified context.
-        /// 
+        ///
         /// </summary>
         public PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value)
         {
@@ -234,10 +240,10 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// 
+        ///
         /// Gets a collection of properties for the type of array specified by the value parameter using
         /// the specified context and attributes.
-        /// 
+        ///
         /// </summary>
         public virtual PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
@@ -266,13 +272,13 @@ namespace System.ComponentModel
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive list.
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive list.
         /// </summary>
         public bool GetStandardValuesExclusive() => GetStandardValuesExclusive(null);
 
         /// <summary>
         /// Gets a value indicating whether the collection of standard values returned from
-        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues'/> is an exclusive 
+        /// <see cref='System.ComponentModel.TypeConverter.GetStandardValues()'/> is an exclusive
         /// list of possible values, using the specified context.
         /// </summary>
         public virtual bool GetStandardValuesExclusive(ITypeDescriptorContext context) => false;
@@ -404,13 +410,13 @@ namespace System.ComponentModel
         /// </summary>
         public class StandardValuesCollection : ICollection
         {
-            private ICollection _values;
+            private readonly ICollection _values;
             private Array _valueArray;
 
             /// <summary>
-            /// 
+            ///
             /// Initializes a new instance of the <see cref='System.ComponentModel.TypeConverter.StandardValuesCollection'/> class.
-            /// 
+            ///
             /// </summary>
             public StandardValuesCollection(ICollection values)
             {
@@ -428,9 +434,9 @@ namespace System.ComponentModel
             }
 
             /// <summary>
-            /// 
+            ///
             /// Gets the number of objects in the collection.
-            /// 
+            ///
             /// </summary>
             public int Count
             {

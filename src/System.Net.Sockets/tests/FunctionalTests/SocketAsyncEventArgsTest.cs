@@ -481,7 +481,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
+        private static void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
         {
             EventWaitHandle handle = (EventWaitHandle)args.UserToken;
             handle.Set();
@@ -514,7 +514,7 @@ namespace System.Net.Sockets.Tests
                 acceptArgs.SetBuffer(new byte[acceptBufferSize], 0, acceptBufferSize);
 
                 Assert.True(server.AcceptAsync(acceptArgs));
- 
+
                 using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
                 {
                     client.Connect(IPAddress.Loopback, port);
@@ -581,7 +581,6 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SAEA left in unusable state after failed BeginGetHostAddresses on netfx")]
         [Fact]
         public async Task SocketConnectAsync_IPAddressAny_SocketAsyncEventArgsReusableAfterFailure()
         {

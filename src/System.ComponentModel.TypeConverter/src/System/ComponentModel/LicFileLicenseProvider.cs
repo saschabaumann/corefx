@@ -16,7 +16,7 @@ namespace System.ComponentModel
     public class LicFileLicenseProvider : LicenseProvider
     {
         /// <summary>
-        /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid 
+        /// Determines if the key retrieved by the <see cref='System.ComponentModel.LicFileLicenseProvider.GetLicense'/> method is valid
         /// for the specified type.
         /// </summary>
         protected virtual bool IsKeyValid(string key, Type type)
@@ -35,7 +35,7 @@ namespace System.ComponentModel
         protected virtual string GetKey(Type type)
         {
             // This string should not be localized.
-            return string.Format(CultureInfo.InvariantCulture, "{0} is a licensed component.", type.FullName);
+            return type.FullName + " is a licensed component.";
         }
 
         /// <summary>

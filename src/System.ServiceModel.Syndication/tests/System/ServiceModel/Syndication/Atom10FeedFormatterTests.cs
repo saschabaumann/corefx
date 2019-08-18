@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1071,7 +1071,7 @@ namespace System.ServiceModel.Syndication.Tests
                 }
                 Assert.Equal("contributor_email", itemThirdContributor.Email);
                 Assert.Equal("contributor_name", itemThirdContributor.Name);
-                Assert.Equal("contributor_uri", thirdContributor.Uri);
+                Assert.Equal("contributor_uri", itemThirdContributor.Uri);
 
                 if (preserveAttributeExtensions)
                 {
@@ -1271,7 +1271,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("html", feed.Title.Type);
             });
         }
-        
+
         [Theory]
         [InlineData(true, true)]
         [InlineData(false, false)]
@@ -1390,7 +1390,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 SyndicationFeed feed = formatter.Feed;
                 Assert.Empty(feed.AttributeExtensions);
-                
+
                 Assert.Equal(3, feed.Authors.Count);
 
                 SyndicationPerson firstAuthor = feed.Authors[0];
@@ -1485,7 +1485,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("generator", feed.Generator);
 
                 Assert.Empty(feed.ElementExtensions);
-                
+
                 Assert.Equal("id", feed.Id);
 
                 Assert.Equal(new Uri("http://imageurl.com/"), feed.ImageUrl);
@@ -1495,7 +1495,7 @@ namespace System.ServiceModel.Syndication.Tests
 
                 SyndicationItem item = items[1];
                 Assert.Empty(item.AttributeExtensions);
-                
+
                 Assert.Equal(3, item.Authors.Count);
 
                 SyndicationPerson itemFirstAuthor = item.Authors[0];
@@ -1594,7 +1594,7 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Equal("html", item.Copyright.Type);
 
                 Assert.Empty(item.ElementExtensions);
-                
+
                 Assert.Equal("id", item.Id);
 
                 Assert.Equal(DateTimeOffset.MinValue, item.LastUpdatedTime);
@@ -1754,9 +1754,9 @@ namespace System.ServiceModel.Syndication.Tests
         }
 
         [Theory]
-        [InlineData(true, true)]
-        [InlineData(false, false)]
-        public void Read_EmptyItem_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        [InlineData(true)]
+        [InlineData(false)]
+        public void Read_EmptyItem_ReturnsExpected(bool preserveElementExtensions)
         {
             VerifyRead(@"<feed xmlns=""http://www.w3.org/2005/Atom""></feed>", preserveElementExtensions, preserveElementExtensions, feed =>
             {
@@ -1777,6 +1777,50 @@ namespace System.ServiceModel.Syndication.Tests
                 Assert.Empty(feed.Links);
                 Assert.Null(feed.Title);
             });
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(false, false)]
+        public void Read_CustomReadItems_ReturnsExpected(bool preserveAttributeExtensions, bool preserveElementExtensions)
+        {
+            using (var stringReader = new StringReader(@"<feed xmlns=""http://www.w3.org/2005/Atom""><entry></entry><entry></entry></feed>"))
+            using (XmlReader reader = XmlReader.Create(stringReader))
+            {
+                var formatter = new CustomAtom10FeedFormatter()
+                {
+                    PreserveAttributeExtensions = preserveAttributeExtensions,
+                    PreserveElementExtensions = preserveElementExtensions
+                };
+                formatter.ReadFrom(reader);
+
+                SyndicationFeed feed = formatter.Feed;
+                Assert.Empty(feed.AttributeExtensions);
+                Assert.Empty(feed.Authors);
+                Assert.Null(feed.BaseUri);
+                Assert.Empty(feed.Categories);
+                Assert.Empty(feed.Contributors);
+                Assert.Null(feed.Copyright);
+                Assert.Null(feed.Description);
+                Assert.Empty(feed.ElementExtensions);
+                Assert.Null(feed.Generator);
+                Assert.Null(feed.Id);
+                Assert.Null(feed.ImageUrl);
+                Assert.Single(feed.Items);
+                Assert.Null(feed.Language);
+                Assert.Equal(DateTimeOffset.MinValue, feed.LastUpdatedTime);
+                Assert.Empty(feed.Links);
+                Assert.Null(feed.Title);
+            }
+        }
+
+        private class CustomAtom10FeedFormatter : Atom10FeedFormatter
+        {
+            protected override IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
+            {
+                areAllItemsRead = false;
+                return new SyndicationItem[] { new SyndicationItem() };
+            }
         }
 
         private static void VerifyRead(string xmlString, bool preserveAttributeExtensions, bool preserveElementExtensions, Action<SyndicationFeed> verifyAction)

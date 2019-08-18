@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <ProjectGuid>{AA81E343-5E54-40B0-9381-C459419BE780}</ProjectGuid>
     <AssemblyName>System.Security.Cryptography.Encoding</AssemblyName>
@@ -7,6 +7,8 @@
     <DefineConstants Condition="'$(TargetGroup)'=='uap'">$(DefineConstants);uap</DefineConstants>
     <Configurations>netcoreapp-OSX-Debug;netcoreapp-OSX-Release;netcoreapp-Unix-Debug;netcoreapp-Unix-Release;netcoreapp-Windows_NT-Debug;netcoreapp-Windows_NT-Release;uap-Windows_NT-Debug;uap-Windows_NT-Release</Configurations>
   </PropertyGroup>
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1\AsnXml.targets" Condition=" '$(TargetsOSX)' == 'true' " />
+  <Import Project="$(CommonPath)\System\Security\Cryptography\Asn1Reader\System.Security.Cryptography.Asn1Reader.Shared.projitems" Condition=" '$(TargetsOSX)' == 'true' " />
   <ItemGroup>
     <Compile Include="Internal\Cryptography\AsnFormatter.cs" />
     <Compile Include="Internal\Cryptography\OidLookup.cs" />
@@ -20,6 +22,9 @@
     <Compile Include="System\Security\Cryptography\OidGroup.cs" />
     <Compile Include="$(CommonPath)\Internal\Cryptography\Helpers.cs">
       <Link>Internal\Cryptography\Helpers.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Security\Cryptography\CryptoPool.cs">
+      <Link>System\Security\Cryptography\CryptoPool.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
@@ -37,6 +42,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs">
       <Link>Common\Interop\Windows\BCrypt\Interop.BCryptPropertyStrings.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs">
+      <Link>Common\Interop\Windows\Crypt32\Interop.CryptFormatObject.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Crypt32\Interop.FindOidInfo.cs">
       <Link>Common\Interop\Windows\Crypt32\Interop.FindOidInfo.cs</Link>
@@ -90,14 +98,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsOSX)' == 'true' ">
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\Asn1V2.cs">
-      <Link>Common\System\Security\Cryptography\Asn1V2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnReader.cs">
-      <Link>Common\System\Security\Cryptography\AsnReader.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Security\Cryptography\AsnWriter.cs">
-      <Link>Common\System\Security\Cryptography\AsnWriter.cs</Link>
+    <Compile Include="$(CommonPath)\System\Memory\PointerMemoryManager.cs">
+      <Link>Common\System\Memory\PointerMemoryManager.cs</Link>
     </Compile>
     <AsnXml Include="$(CommonPath)\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml">
       <Link>Common\System\Security\Cryptography\Asn1\DirectoryStringAsn.xml</Link>

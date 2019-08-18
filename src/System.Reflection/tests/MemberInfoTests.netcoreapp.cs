@@ -166,7 +166,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void HasSameMetadataDefinitionAs_Twins()
         {
-            // This situation is particularly treacherous for CoreRT as the .Net Native toolchain can and does assign
+            // This situation is particularly treacherous for CoreRT as the .NET Native toolchain can and does assign
             // the same native metadata tokens to identically structured members in unrelated types.
             Type twin1 = typeof(Twin1);
             Type twin2 = typeof(Twin2);
@@ -342,7 +342,7 @@ namespace System.Reflection.Tests
         public static void HasSameMetadataDefinitionAs_CornerCase_CLSIDConstructor()
         {
             // HasSameMetadataDefinitionAs on a GetTypeFromCLSID type is uninteresting (they'll never be an actual member of a type)
-            // but for future compat, we'll establish their known behavior here. Since these types and their constructors all return the same 
+            // but for future compat, we'll establish their known behavior here. Since these types and their constructors all return the same
             // MetadataToken, they'll all "match" each other.
 
             Type t1 = Type.GetTypeFromCLSID(new Guid("23A54889-7738-4F16-8AB2-CB23F8E756BE"));
@@ -489,4 +489,3 @@ namespace System.Reflection.Tests
         }
     }
 }
-

@@ -19,6 +19,15 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(Type serializerType, Type baseSerializerType)
         {
+            if (serializerType == null)
+            {
+                throw new ArgumentNullException(nameof(serializerType));
+            }
+            if (baseSerializerType == null)
+            {
+                throw new ArgumentNullException(nameof(baseSerializerType));
+            }
+
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
@@ -28,6 +37,11 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType)
         {
+            if (baseSerializerType == null)
+            {
+                throw new ArgumentNullException(nameof(baseSerializerType));
+            }
+
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
         }
@@ -50,7 +64,7 @@ namespace System.ComponentModel.Design.Serialization
         /// Retrieves the fully qualified type name of the serializer base type.
         /// </summary>
         public string SerializerBaseTypeName { get; }
-        
+
         /// <summary>
         /// This defines a unique ID for this attribute type. It is used
         /// by filtering algorithms to identify two attributes that are
@@ -64,7 +78,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 if (_typeId == null)
                 {
-                    string baseType = SerializerBaseTypeName;
+                    string baseType = SerializerBaseTypeName ?? string.Empty;
                     int comma = baseType.IndexOf(',');
                     if (comma != -1)
                     {
@@ -77,4 +91,3 @@ namespace System.ComponentModel.Design.Serialization
         }
     }
 }
-

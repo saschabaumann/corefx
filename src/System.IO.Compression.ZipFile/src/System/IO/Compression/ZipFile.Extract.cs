@@ -20,7 +20,7 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
@@ -38,11 +38,11 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
-        /// 
+        ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwrite: false);
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName) =>
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: false);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -53,7 +53,7 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
@@ -71,12 +71,12 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
-        /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        ///
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param> 
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwrite) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwrite: overwrite);
+        /// <param name="overwriteFiles">True to indicate overwrite.</param>
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, bool overwriteFiles) =>
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: null, overwriteFiles: overwriteFiles);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -87,7 +87,7 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
@@ -105,7 +105,7 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
-        /// 
+        ///
         /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
@@ -130,8 +130,8 @@ namespace System.IO.Compression
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding) => 
-            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwrite: false);
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding) =>
+            ExtractToDirectory(sourceArchiveFileName, destinationDirectoryName, entryNameEncoding: entryNameEncoding, overwriteFiles: false);
 
         /// <summary>
         /// Extracts all of the files in the specified archive to a directory on the file system.
@@ -142,7 +142,7 @@ namespace System.IO.Compression
         /// is interpreted as relative to the current working directory. If a file to be archived has an invalid last modified
         /// time, the first datetime representable in the Zip timestamp format (midnight on January 1, 1980) will be used.
         /// </summary>
-        /// 
+        ///
         /// <exception cref="ArgumentException">sourceArchive or destinationDirectoryName is a zero-length string, contains only whitespace,
         /// or contains one or more invalid characters as defined by InvalidPathChars.</exception>
         /// <exception cref="ArgumentNullException">sourceArchive or destinationDirectoryName is null.</exception>
@@ -160,10 +160,10 @@ namespace System.IO.Compression
         /// <exception cref="InvalidDataException">The archive specified by sourceArchive: Is not a valid ZipArchive
         /// -or- An archive entry was not found or was corrupt. -or- An archive entry has been compressed using a compression method
         /// that is not supported.</exception>
-        /// 
-        /// <param name="destinationArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
+        ///
+        /// <param name="sourceArchiveFileName">The path to the archive on the file system that is to be extracted.</param>
         /// <param name="destinationDirectoryName">The path to the directory on the file system. The directory specified must not exist, but the directory that it is contained in must exist.</param>
-        /// <param name="overwrite">True to indicate overwrite.</param>
+        /// <param name="overwriteFiles">True to indicate overwrite.</param>
         /// <param name="entryNameEncoding">The encoding to use when reading or writing entry names in this ZipArchive.
         ///         ///     <para>NOTE: Specifying this parameter to values other than <c>null</c> is discouraged.
         ///         However, this may be necessary for interoperability with ZIP archive tools and libraries that do not correctly support
@@ -186,14 +186,14 @@ namespace System.IO.Compression
         ///     <para>Note that Unicode encodings other than UTF-8 may not be currently used for the <c>entryNameEncoding</c>,
         ///     otherwise an <see cref="ArgumentException"/> is thrown.</para>
         /// </param>
-        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding, bool overwrite)
+        public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName, Encoding entryNameEncoding, bool overwriteFiles)
         {
             if (sourceArchiveFileName == null)
                 throw new ArgumentNullException(nameof(sourceArchiveFileName));
 
             using (ZipArchive archive = Open(sourceArchiveFileName, ZipArchiveMode.Read, entryNameEncoding))
             {
-                archive.ExtractToDirectory(destinationDirectoryName, overwrite);
+                archive.ExtractToDirectory(destinationDirectoryName, overwriteFiles);
             }
         }
     }

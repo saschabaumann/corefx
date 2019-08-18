@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 
@@ -64,8 +65,6 @@ namespace System.Diagnostics
         private StreamReader _standardError;
         private bool _disposed;
 
-        private static object s_createProcessLock = new object();
-
         private bool _standardInputAccessed;
 
         private StreamReadMode _outputStreamReadMode;
@@ -81,6 +80,8 @@ namespace System.Diagnostics
         internal bool _pendingOutputRead;
         internal bool _pendingErrorRead;
 
+        private static int s_cachedSerializationSwitch = 0;
+
         /// <devdoc>
         ///    <para>
         ///       Initializes a new instance of the <see cref='System.Diagnostics.Process'/> class.
@@ -88,7 +89,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public Process()
         {
-            // This class once inherited a finalizer. For backward compatibility it has one so that 
+            // This class once inherited a finalizer. For backward compatibility it has one so that
             // any derived class that depends on it will see the behaviour expected. Since it is
             // not used by this class itself, suppress it immediately if this is not an instance
             // of a derived class it doesn't suffer the GC burden of finalization.
@@ -119,7 +120,7 @@ namespace System.Diagnostics
             get
             {
                 EnsureState(State.Associated);
-                return OpenProcessHandle();
+                return GetOrOpenProcessHandle();
             }
         }
 
@@ -129,7 +130,7 @@ namespace System.Diagnostics
         ///     Returns whether this process component is associated with a real process.
         /// </devdoc>
         /// <internalonly/>
-        bool Associated
+        private bool Associated
         {
             get { return _haveProcessId || _haveProcessHandle; }
         }
@@ -544,8 +545,7 @@ namespace System.Diagnostics
 
         /// <devdoc>
         ///    <para>
-        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start'/> method for the <see cref='System.Diagnostics.Process'/>
-        ///       .
+        ///       Gets or sets the properties to pass into the <see cref='System.Diagnostics.Process.Start(System.Diagnostics.ProcessStartInfo)'/> method for the <see cref='System.Diagnostics.Process'/>.
         ///    </para>
         /// </devdoc>
         public ProcessStartInfo StartInfo
@@ -618,7 +618,6 @@ namespace System.Diagnostics
 
         partial void EnsureHandleCountPopulated();
 
-        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public long VirtualMemorySize64
         {
             get
@@ -628,6 +627,7 @@ namespace System.Diagnostics
             }
         }
 
+        [ObsoleteAttribute("This property has been deprecated.  Please use System.Diagnostics.Process.VirtualMemorySize64 instead.  https://go.microsoft.com/fwlink/?linkid=14202")]
         public int VirtualMemorySize
         {
             get
@@ -658,7 +658,6 @@ namespace System.Diagnostics
                     {
                         if (value)
                         {
-                            OpenProcessHandle();
                             EnsureWatchingForExit();
                         }
                         else
@@ -835,16 +834,17 @@ namespace System.Diagnostics
         {
             if (Associated)
             {
+                // We need to lock to ensure we don't run concurrently with CompletionCallback.
+                // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
+                // raise the Exited event a second time for the same process.
+                lock (this)
+                {
+                    // This sets _waitHandle to null which causes CompletionCallback to not emit events.
+                    StopWatchingForExit();
+                }
+
                 if (_haveProcessHandle)
                 {
-                    // We need to lock to ensure we don't run concurrently with CompletionCallback.
-                    // Without this lock we could reset _raisedOnExited which causes CompletionCallback to
-                    // raise the Exited event a second time for the same process.
-                    lock (this)
-                    {
-                        // This sets _waitHandle to null which causes CompletionCallback to not emit events.
-                        StopWatchingForExit();
-                    }
                     _processHandle.Dispose();
                     _processHandle = null;
                     _haveProcessHandle = false;
@@ -856,13 +856,14 @@ namespace System.Diagnostics
 
                 // Only call close on the streams if the user cannot have a reference on them.
                 // If they are referenced it is the user's responsibility to dispose of them.
-                try 
+                try
                 {
                     if (_standardOutput != null && (_outputStreamReadMode == StreamReadMode.AsyncMode || _outputStreamReadMode == StreamReadMode.Undefined))
                     {
                         if (_outputStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _output.CancelOperation();
+                            _output?.CancelOperation();
+                            _output?.Dispose();
                         }
                         _standardOutput.Close();
                     }
@@ -871,7 +872,8 @@ namespace System.Diagnostics
                     {
                         if (_errorStreamReadMode == StreamReadMode.AsyncMode)
                         {
-                            _error.CancelOperation();
+                            _error?.CancelOperation();
+                            _error?.Dispose();
                         }
                         _standardError.Close();
                     }
@@ -881,7 +883,7 @@ namespace System.Diagnostics
                         _standardInput.Close();
                     }
                 }
-                finally 
+                finally
                 {
                     _standardOutput = null;
                     _standardInput = null;
@@ -998,7 +1000,7 @@ namespace System.Diagnostics
         {
             if (!ProcessManager.IsProcessRunning(processId, machineName))
             {
-                throw new ArgumentException(SR.Format(SR.MissingProccess, processId.ToString(CultureInfo.CurrentCulture)));
+                throw new ArgumentException(SR.Format(SR.MissingProccess, processId.ToString()));
             }
 
             return new Process(machineName, ProcessManager.IsRemoteMachine(machineName), processId, null);
@@ -1129,11 +1131,11 @@ namespace System.Diagnostics
         /// Opens a long-term handle to the process, with all access.  If a handle exists,
         /// then it is reused.  If the process has exited, it throws an exception.
         /// </summary>
-        private SafeProcessHandle OpenProcessHandle()
+        private SafeProcessHandle GetOrOpenProcessHandle()
         {
             if (!_haveProcessHandle)
             {
-                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.            
+                //Cannot open a new process handle if the object has been disposed, since finalization has been suppressed.
                 if (_disposed)
                 {
                     throw new ObjectDisposedException(GetType().Name);
@@ -1176,7 +1178,7 @@ namespace System.Diagnostics
         ///    <para>
         ///       Starts a process specified by the <see cref='System.Diagnostics.Process.StartInfo'/> property of this <see cref='System.Diagnostics.Process'/>
         ///       component and associates it with the
-        ///    <see cref='System.Diagnostics.Process'/> . If a process resource is reused 
+        ///    <see cref='System.Diagnostics.Process'/> . If a process resource is reused
         ///       rather than started, the reused process is associated with this <see cref='System.Diagnostics.Process'/>
         ///       component.
         ///    </para>
@@ -1207,11 +1209,13 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
 
-            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.            
+            //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name);
             }
+
+            SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
 
             return StartCore(startInfo);
         }
@@ -1323,7 +1327,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>
-        /// Instructs the Process component to wait the specified number of milliseconds for 
+        /// Instructs the Process component to wait the specified number of milliseconds for
         /// the associated process to exit.
         /// </summary>
         public bool WaitForExit(int milliseconds)

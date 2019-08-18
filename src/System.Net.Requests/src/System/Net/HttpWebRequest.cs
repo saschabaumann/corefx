@@ -26,7 +26,7 @@ namespace System.Net
 
         private WebHeaderCollection _webHeaderCollection = new WebHeaderCollection();
 
-        private Uri _requestUri;
+        private readonly Uri _requestUri;
         private string _originVerb = HttpMethod.Get.Method;
 
         // We allow getting and setting this (to preserve app-compat). But we don't do anything with it
@@ -93,8 +93,6 @@ namespace System.Net
         }
         private const string ContinueHeader = "100-continue";
         private const string ChunkedHeader = "chunked";
-        private const string GZipHeader = "gzip";
-        private const string DeflateHeader = "deflate";
 
         public HttpWebRequest()
         {
@@ -394,8 +392,7 @@ namespace System.Net
                     //
                     // if not check if the user is trying to set chunked:
                     //
-                    string newValue = value.ToLower();
-                    fChunked = (newValue.IndexOf(ChunkedHeader) != -1);
+                    fChunked = (value.IndexOf(ChunkedHeader, StringComparison.OrdinalIgnoreCase) != -1);
 
                     //
                     // prevent them from adding chunked, or from adding an Encoding without
@@ -539,10 +536,8 @@ namespace System.Net
                         return;
                     }
 
-                    string newValue = value.ToLower();
-
-                    fKeepAlive = (newValue.IndexOf("keep-alive") != -1);
-                    fClose = (newValue.IndexOf("close") != -1);
+                    fKeepAlive = (value.IndexOf("keep-alive", StringComparison.OrdinalIgnoreCase) != -1);
+                    fClose = (value.IndexOf("close", StringComparison.OrdinalIgnoreCase) != -1);
 
                     //
                     // Prevent keep-alive and close from being added
@@ -603,9 +598,7 @@ namespace System.Net
                     // Prevent 100-continues from being added
                     //
 
-                    string newValue = value.ToLower();
-
-                    fContinue100 = (newValue.IndexOf(ContinueHeader) != -1);
+                    fContinue100 = (value.IndexOf(ContinueHeader, StringComparison.OrdinalIgnoreCase) != -1);
 
                     if (fContinue100)
                     {
@@ -1140,7 +1133,7 @@ namespace System.Net
                 // However, HttpWebRequest doesn't have a separate 'UseProxy' property. Instead,
                 // the default of the 'Proxy' property is a non-null IWebProxy object which is the
                 // system default proxy object. If the 'Proxy' property were actually null, then
-                // that means don't use any proxy. 
+                // that means don't use any proxy.
                 //
                 // So, we need to map the desired HttpWebRequest proxy settings to equivalent
                 // HttpClientHandler settings.
@@ -1151,6 +1144,13 @@ namespace System.Net
                 else if (!object.ReferenceEquals(_proxy, WebRequest.GetSystemWebProxy()))
                 {
                     handler.Proxy = _proxy;
+                }
+                else
+                {
+                    // Since this HttpWebRequest is using the default system proxy, we need to
+                    // pass any proxy credentials that the developer might have set via the
+                    // WebRequest.DefaultWebProxy.Credentials property.
+                    handler.DefaultProxyCredentials = _proxy.Credentials;
                 }
 
                 handler.ClientCertificates.AddRange(ClientCertificates);

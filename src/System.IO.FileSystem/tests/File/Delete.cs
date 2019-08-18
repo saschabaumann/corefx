@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
 using Xunit;
 using Microsoft.DotNet.XUnitExtensions;
 
@@ -9,12 +10,14 @@ namespace System.IO.Tests
 {
     public class File_Delete : FileSystemTest
     {
-        public virtual void Delete(string path)
+        static bool IsBindMountSupported => RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && !PlatformDetection.IsInContainer && !PlatformDetection.IsRedHatFamily6;
+
+        protected virtual void Delete(string path)
         {
             File.Delete(path);
         }
 
-        public virtual FileInfo Create(string path)
+        protected virtual FileInfo Create(string path)
         {
             var ret = new FileInfo(path);
             ret.Create().Dispose();
@@ -113,30 +116,24 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        [ConditionalFact(nameof(IsBindMountSupported))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_NonExistentPath_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
-
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Delete(Path.Combine(readOnlyDirectory, "DoesNotExist"));
             });
         }
 
-        [Fact]
+        [ConditionalFact(nameof(IsBindMountSupported))]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
         public void Unix_ExistingDirectory_ReadOnlyVolume()
         {
-            if (PlatformDetection.IsRedHatFamily6 || PlatformDetection.IsAlpine)
-                return; // [ActiveIssue(https://github.com/dotnet/corefx/issues/21920)]
-
             ReadOnly_FileSystemHelper(readOnlyDirectory =>
             {
                 Assert.Throws<IOException>(() => Delete(Path.Combine(readOnlyDirectory, "subdir")));
@@ -193,7 +190,6 @@ namespace System.IO.Tests
             InlineData(":bar"),
             InlineData(":bar:$DATA")]
         [PlatformSpecific(TestPlatforms.Windows)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         public void WindowsDeleteAlternateDataStream(string streamName)
         {
             FileInfo testFile = Create(GetTestFilePath());
